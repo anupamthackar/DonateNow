@@ -1,36 +1,25 @@
-# 💚 DonateNow
+# DonateNow (iOS Native App)
 
-A simple, transparent digital donation platform built for local NGOs to replace manual bank-transfer-based donation collection with a modern, seamless online experience.
+<p align="center">
+  <strong>A modern, native iOS donation platform for local NGOs.</strong>
+</p>
 
----
+## 📖 Overview
 
-## 🎯 Problem
-
-Local NGOs often rely on **bank transfers** and **manual spreadsheets** to manage donations — leading to lost donor data, poor donor experience, and zero real-time visibility into fundraising progress.
-
-**DonateNow** solves this by providing:
-- A **public donation page** donors can access via a single shareable link
-- **Instant payment processing** through Razorpay (UPI, cards, netbanking)
-- **Automatic donor record creation** — zero manual data entry
-- An **admin dashboard** for the NGO team to track donations in real time
+**DonateNow** is a native iOS application built to help NGOs collect donations seamlessly and track donor information without manual reconciliation. Built with Swift and SwiftUI, it integrates Razorpay for secure payments and Supabase for a real-time backend and secure server-side logic via Edge Functions.
 
 ---
 
-## ✨ Features
+## ✨ Core Features
 
-### For Donors
 | Feature | Description |
 |---|---|
-| 🏠 Public Donation Page | View cause details and predefined donation amounts (₹100 / ₹500 / ₹1000 / ₹2000) or enter a custom amount |
-| 💳 Razorpay Checkout | Secure payment via UPI, credit/debit card, or netbanking |
-| 🙏 Thank-You Page | Instant confirmation with donation summary after payment |
-
-### For NGO Admins
-| Feature | Description |
-|---|---|
-| 🔐 Admin Login | Secure email/password authentication via Supabase Auth |
-| 📊 Dashboard | Real-time stats — total donations, total amount raised, recent activity |
-| 📋 Donor Log | Searchable, filterable, paginated table of all donations |
+| 💳 **Native Payments** | Integrated Razorpay iOS SDK for UPI, cards, and netbanking |
+| ⚡ **Real-time DB** | Automatic donor record creation in Supabase |
+| 🛡️ **Secure Backend** | Edge Functions handle signature verification (secrets stay off-device) |
+| 📱 **Universal App** | Adaptive layouts for both iPhone and iPad |
+| 🔐 **Admin Dashboard** | In-app admin login protected by Supabase Auth and Keychain |
+| 📋 **Donor Log** | Searchable, filterable list of all donations for the NGO team |
 
 ---
 
@@ -38,11 +27,11 @@ Local NGOs often rely on **bank transfers** and **manual spreadsheets** to manag
 
 | Layer | Technology | Why |
 |---|---|---|
-| **Frontend + Backend** | Next.js 14+ (App Router) | Full-stack, SSR, API routes, fast |
-| **Database + Auth** | Supabase (PostgreSQL) | Built-in auth, Row-Level Security, free tier |
-| **Payments** | Razorpay (Test Mode) | India-focused, UPI support, easy integration |
-| **Hosting** | Vercel | Free tier, seamless Next.js deployment |
-| **Styling** | CSS Modules / Vanilla CSS | Scoped styling, no external dependencies |
+| **Frontend** | SwiftUI & Swift 5.9+ | Modern, declarative native iOS UI, adaptive layouts |
+| **Architecture** | MVVM | Separation of UI and business logic, reactive state via `@Observable` |
+| **Database & Auth** | Supabase Swift SDK | Built-in Auth, Row-Level Security, PostgreSQL |
+| **Payments** | Razorpay iOS SDK | India-focused, native checkout sheet |
+| **Server Logic** | Supabase Edge Functions (Deno) | Server-side execution for key secrets and webhooks |
 
 ---
 
@@ -50,13 +39,13 @@ Local NGOs often rely on **bank transfers** and **manual spreadsheets** to manag
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    NEXT.JS APP                       │
+│                   NATIVE iOS APP                     │
 │                                                     │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
-│  │  Public Pages │  │  Admin Panel │  │ API Routes│ │
-│  │  - Donate     │  │  - Dashboard │  │ - Orders  │ │
-│  │  - Thank You  │  │  - Donor Log │  │ - Verify  │ │
-│  │               │  │  - Login     │  │ - Webhook │ │
+│  │  Public Views │  │  Admin Panel │  │ Services  │ │
+│  │  - Donation   │  │  - Dashboard │  │ - Supabase│ │
+│  │  - Thank You  │  │  - Donor Log │  │ - Payment │ │
+│  │               │  │  - Login     │  │ - Auth    │ │
 │  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘ │
 │         │                 │                 │       │
 └─────────┼─────────────────┼─────────────────┼───────┘
@@ -65,9 +54,15 @@ Local NGOs often rely on **bank transfers** and **manual spreadsheets** to manag
 ┌──────────────┐   ┌──────────────┐   ┌──────────────┐
 │   RAZORPAY   │   │   SUPABASE   │   │   SUPABASE   │
 │  (Payments)  │   │    (Auth)    │   │  (Database)  │
-│  - Checkout  │   │  - Admin JWT │   │  - donations │
-│  - Webhooks  │   │  - Sessions  │   │  - causes    │
-└──────────────┘   └──────────────┘   └──────────────┘
+│  - iOS SDK   │   │  - Admin JWT │   │  - donations │
+│              │   │  - Keychain  │   │  - causes    │
+└──────┬───────┘   └──────────────┘   └───────▲──────┘
+       │                                      │
+       ▼                                      │
+┌──────────────┐                      ┌───────┴──────┐
+│   RAZORPAY   │      Webhooks        │   SUPABASE   │
+│   (Backend)  ├─────────────────────►│Edge Functions│
+└──────────────┘                      └──────────────┘
 ```
 
 ---
@@ -75,45 +70,42 @@ Local NGOs often rely on **bank transfers** and **manual spreadsheets** to manag
 ## 📁 Project Structure
 
 ```
-src/
-├── app/
-│   ├── layout.js                → Root layout
-│   ├── page.js                  → Donation page (public)
-│   ├── thank-you/page.js        → Thank-you page
-│   ├── admin/
-│   │   ├── login/page.js        → Admin login
-│   │   ├── page.js              → Admin dashboard
-│   │   └── donors/page.js       → Donor log
-│   └── api/
-│       ├── create-order/        → Create Razorpay order
-│       ├── verify-payment/      → Verify payment + save donation
-│       └── webhook/razorpay/    → Handle Razorpay webhooks
-├── components/                  → Reusable UI components
-├── lib/                         → Supabase clients, Razorpay SDK, utilities
-└── styles/                      → Global + module CSS
+DonateNow/
+├── DonateNowApp.swift           → App entry point
+├── Configuration/               
+│   ├── Config.xcconfig          → Local environment config
+│   └── Info.plist               
+├── Models/                      → Swift Codable structs (Cause, Donation)
+├── Views/                       
+│   ├── Public/                  → DonationView, ThankYouView
+│   ├── Admin/                   → AdminLoginView, Dashboard, DonorLog
+│   └── Components/              → Reusable SwiftUI elements
+├── ViewModels/                  → State and business logic (@Observable)
+├── Services/                    → API calls (SupabaseManager, PaymentService)
+└── Theme/                       → Colors, Typography, ViewModifiers
 ```
 
 ---
 
 ## 🔄 How It Works
 
-```
-1. Donor visits the donation page
-2. Selects an amount (e.g. ₹500) and fills in name + email
-3. Clicks "Donate Now" → Razorpay Checkout opens
-4. Completes payment via UPI / card / netbanking
-5. Thank-you page displayed instantly with donation summary
-6. Donation auto-recorded in Supabase database
-7. Admin logs in and sees the donation in the donor log
-```
+1. Donor opens the app and views the active cause.
+2. Selects an amount (e.g. ₹500) and fills in their name and email.
+3. Taps "Donate Now" → App calls `create-order` Edge Function.
+4. Razorpay iOS native checkout sheet is presented.
+5. Donor completes payment via UPI / card / netbanking.
+6. Razorpay success callback triggers `verify-payment` Edge Function.
+7. Edge Function verifies signature and saves to Supabase.
+8. App navigates to Thank-You view.
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+
-- A [Supabase](https://supabase.com) project (free tier)
+- macOS with Xcode 15+
+- An Apple ID (Apple Developer Account optional for Simulator)
+- A [Supabase](https://supabase.com) project
 - A [Razorpay](https://razorpay.com) account (test mode)
 
 ### Installation
@@ -123,93 +115,63 @@ src/
 git clone https://github.com/anupamthackar/DonateNow.git
 cd DonateNow
 
-# Install dependencies
-npm install
-
 # Set up environment variables
-cp AI\ Agent/extended/.env.example .env.local
-# Edit .env.local with your Supabase and Razorpay credentials
-
-# Run the development server
-npm run dev
+cp "AI Agent/extended/Config.example.xcconfig" Configuration/Config.xcconfig
+# Edit Config.xcconfig with your Supabase URL and public keys
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+Open the project in Xcode, let Swift Package Manager resolve dependencies, select a Simulator (e.g., iPhone 15 Pro), and hit **Run (Cmd+R)**.
 
 ### Environment Variables
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
-| `NEXT_PUBLIC_RAZORPAY_KEY_ID` | Razorpay test key ID (`rzp_test_...`) |
-| `RAZORPAY_KEY_SECRET` | Razorpay key secret (server-only) |
-| `RAZORPAY_WEBHOOK_SECRET` | Webhook signature verification secret |
+| Variable | Location | Description |
+|---|---|---|
+| `SUPABASE_URL` | `Config.xcconfig` (iOS) | Your Supabase project URL |
+| `SUPABASE_ANON_KEY` | `Config.xcconfig` (iOS) | Supabase anonymous/public key |
+| `RAZORPAY_KEY_ID` | `Config.xcconfig` (iOS) | Razorpay test key ID (`rzp_test_...`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Vault (Server) | Service role key (bypasses RLS) |
+| `RAZORPAY_KEY_SECRET` | Supabase Vault (Server) | Razorpay key secret |
+| `RAZORPAY_WEBHOOK_SECRET` | Supabase Vault (Server) | Webhook signature verification secret |
 
 ---
 
 ## 🔒 Security
 
-- **Row-Level Security (RLS)** on all Supabase tables
-- **Razorpay signature verification** on every payment and webhook
-- **Admin routes protected** by Supabase Auth (JWT)
-- **No payment card data** stored in the database — handled entirely by Razorpay
-- **Server-side secrets** never exposed to the client
+- **Row-Level Security (RLS)**: Enforced on all Supabase tables. The app cannot insert donation records directly.
+- **Server-Side Verification**: Edge Functions verify Razorpay signatures.
+- **Keychain Storage**: Supabase Swift SDK securely stores Admin JWTs.
+- **App Transport Security (ATS)**: Enforced by iOS (HTTPS only).
+- **No PCI Data**: Credit card info is securely handled by the native Razorpay SDK; the app never touches it.
 
 ---
 
-## 📊 API Endpoints
+## 🌐 Supabase Edge Functions
 
-| Method | Endpoint | Auth | Purpose |
-|---|---|---|---|
-| `POST` | `/api/create-order` | Public | Create a Razorpay order |
-| `POST` | `/api/verify-payment` | Public | Verify payment + save donation |
-| `POST` | `/api/webhook/razorpay` | Razorpay Signature | Handle payment events |
-| `GET` | `/api/admin/donations` | Admin JWT | Fetch donor log |
-| `GET` | `/api/admin/stats` | Admin JWT | Fetch dashboard statistics |
-| `GET` | `/api/health` | Public | Health check |
+Since secrets cannot be stored on the device, critical operations run via Edge Functions:
+
+| Function | Auth | Purpose |
+|---|---|---|
+| `create-order` | Anon | Creates a Razorpay order server-side |
+| `verify-payment` | Anon | Verifies HMAC signature and inserts donation |
+| `razorpay-webhook`| Razorpay Signature | Updates donation status asynchronously |
 
 ---
 
 ## 🧪 Testing
 
-The project uses a layered testing approach:
-
-- **Unit Tests** — Validation logic, currency formatting, signature verification (Jest)
-- **Integration Tests** — API routes with Supabase + Razorpay (Supertest)
-- **E2E Tests** — Full donation flow, admin login + donor log (Playwright)
-
-```bash
-# Run unit tests
-npm test
-
-# Run E2E tests
-npx playwright test
-```
+- **Unit Tests (XCTest)**: Validations, formatters, and logic.
+- **UI Tests (XCUITest)**: End-to-end user flows (Donation, Admin Login).
+- **Performance Profiling**: Xcode Instruments (Time Profiler, Allocations).
 
 ---
 
 ## ⚠️ Current Limitations (MVP)
 
-- 🔸 **Test mode only** — no real money processed
-- 🔸 **Single cause** — no multi-cause or campaign support
-- 🔸 **No email notifications** — no automated thank-you emails
-- 🔸 **No recurring donations** — one-time only
-- 🔸 **No tax receipts** — no 80G certificate generation
-- 🔸 **Web only** — no mobile app
-- 🔸 **INR only** — single currency
-
----
-
-## 🗺️ Roadmap
-
-| Phase | Features |
-|---|---|
-| **Phase 2** | Email receipts, CSV export, 80G tax certificates |
-| **Phase 3** | Multi-cause support, campaign management |
-| **Phase 4** | Recurring donations, donor accounts |
-| **Phase 5** | Mobile app, social sharing, analytics dashboard |
+- 🔸 **Test mode only** — No real money processed (Razorpay test keys).
+- 🔸 **Simulator Distribution** — Requires an Apple Developer Account for TestFlight/App Store.
+- 🔸 **No Web Version** — This is a native iOS application.
+- 🔸 **Single cause** — No multi-cause or campaign support.
+- 🔸 **No tax receipts** — No 80G certificate generation.
 
 ---
 
@@ -220,13 +182,12 @@ Detailed project documentation is available in the [`AI Agent/`](./AI%20Agent/) 
 | Document | Description |
 |---|---|
 | [Business Idea](./AI%20Agent/business_idea.mdc) | Problem statement, proposed solution, business goals |
-| [PRD](./AI%20Agent/PRD.mdc) | Product requirements, user flows, API contracts, edge cases |
+| [PRD](./AI%20Agent/PRD.mdc) | Product requirements, user flows, Edge Functions, edge cases |
 | [Project Scope](./AI%20Agent/Project_Scope.mdc) | Scope definition, assumptions, constraints, risks |
-| [KPIs](./AI%20Agent/KPI.mdc) | Measurable success criteria and acceptance tests |
-| [Architecture](./AI%20Agent/extended/architecture.mdc) | System architecture, tech stack, component structure |
-| [ERD](./AI%20Agent/extended/ERD.mdc) | Database schema and entity relationships |
-| [Security](./AI%20Agent/extended/security.mdc) | Security policies and implementation details |
-| [Testing](./AI%20Agent/extended/testing.md) | Testing strategy and test cases |
+| [KPIs](./AI%20Agent/KPI.mdc) | Measurable iOS success criteria and performance targets |
+| [Architecture](./AI%20Agent/extended/architecture.mdc) | MVVM architecture, tech stack, Xcode project structure |
+| [ERD](./AI%20Agent/extended/ERD.mdc) | Database schema and Supabase configurations |
+| [Security](./AI%20Agent/extended/security.mdc) | iOS Security policies (Keychain, ATS) |
 
 ---
 
