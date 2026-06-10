@@ -1,0 +1,697 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		18A5CB5A2FD99130003A744E /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 18A5CB592FD99130003A744E /* Auth */; };
+		18A5CB5C2FD99130003A744E /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 18A5CB5B2FD99130003A744E /* Functions */; };
+		18A5CB5E2FD99130003A744E /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 18A5CB5D2FD99130003A744E /* PostgREST */; };
+		18A5CB602FD99130003A744E /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 18A5CB5F2FD99130003A744E /* Realtime */; };
+		18A5CB622FD99130003A744E /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 18A5CB612FD99130003A744E /* Storage */; };
+		18A5CB642FD99130003A744E /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 18A5CB632FD99130003A744E /* Supabase */; };
+		18A5CB672FD9917D003A744E /* RazorpayCheckout in Frameworks */ = {isa = PBXBuildFile; productRef = 18A5CB662FD9917D003A744E /* RazorpayCheckout */; };
+		18A5CB692FD991FA003A744E /* Config.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 18A5CB682FD991FA003A744E /* Config.xcconfig */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		18A5CAFE2FD97C3F003A744E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 18A5CAE42FD97C3B003A744E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 18A5CAEB2FD97C3B003A744E;
+			remoteInfo = DonateNow;
+		};
+		18A5CB082FD97C3F003A744E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 18A5CAE42FD97C3B003A744E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 18A5CAEB2FD97C3B003A744E;
+			remoteInfo = DonateNow;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		18A5CAEC2FD97C3B003A744E /* DonateNow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DonateNow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		18A5CAFD2FD97C3F003A744E /* DonateNowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DonateNowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		18A5CB072FD97C3F003A744E /* DonateNowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DonateNowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		18A5CB682FD991FA003A744E /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		18A5CB0F2FD97C3F003A744E /* Exceptions for "DonateNow" folder in "DonateNow" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 18A5CAEB2FD97C3B003A744E /* DonateNow */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		18A5CAEE2FD97C3B003A744E /* DonateNow */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				18A5CB0F2FD97C3F003A744E /* Exceptions for "DonateNow" folder in "DonateNow" target */,
+			);
+			path = DonateNow;
+			sourceTree = "<group>";
+		};
+		18A5CB002FD97C3F003A744E /* DonateNowTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DonateNowTests;
+			sourceTree = "<group>";
+		};
+		18A5CB0A2FD97C3F003A744E /* DonateNowUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DonateNowUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		18A5CAE92FD97C3B003A744E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18A5CB5E2FD99130003A744E /* PostgREST in Frameworks */,
+				18A5CB5C2FD99130003A744E /* Functions in Frameworks */,
+				18A5CB672FD9917D003A744E /* RazorpayCheckout in Frameworks */,
+				18A5CB642FD99130003A744E /* Supabase in Frameworks */,
+				18A5CB5A2FD99130003A744E /* Auth in Frameworks */,
+				18A5CB622FD99130003A744E /* Storage in Frameworks */,
+				18A5CB602FD99130003A744E /* Realtime in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18A5CAFA2FD97C3F003A744E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18A5CB042FD97C3F003A744E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		18A5CAE32FD97C3B003A744E = {
+			isa = PBXGroup;
+			children = (
+				18A5CB682FD991FA003A744E /* Config.xcconfig */,
+				18A5CAEE2FD97C3B003A744E /* DonateNow */,
+				18A5CB002FD97C3F003A744E /* DonateNowTests */,
+				18A5CB0A2FD97C3F003A744E /* DonateNowUITests */,
+				18A5CAED2FD97C3B003A744E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		18A5CAED2FD97C3B003A744E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				18A5CAEC2FD97C3B003A744E /* DonateNow.app */,
+				18A5CAFD2FD97C3F003A744E /* DonateNowTests.xctest */,
+				18A5CB072FD97C3F003A744E /* DonateNowUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		18A5CAEB2FD97C3B003A744E /* DonateNow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 18A5CB102FD97C3F003A744E /* Build configuration list for PBXNativeTarget "DonateNow" */;
+			buildPhases = (
+				18A5CAE82FD97C3B003A744E /* Sources */,
+				18A5CAE92FD97C3B003A744E /* Frameworks */,
+				18A5CAEA2FD97C3B003A744E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				18A5CAEE2FD97C3B003A744E /* DonateNow */,
+			);
+			name = DonateNow;
+			packageProductDependencies = (
+				18A5CB592FD99130003A744E /* Auth */,
+				18A5CB5B2FD99130003A744E /* Functions */,
+				18A5CB5D2FD99130003A744E /* PostgREST */,
+				18A5CB5F2FD99130003A744E /* Realtime */,
+				18A5CB612FD99130003A744E /* Storage */,
+				18A5CB632FD99130003A744E /* Supabase */,
+				18A5CB662FD9917D003A744E /* RazorpayCheckout */,
+			);
+			productName = DonateNow;
+			productReference = 18A5CAEC2FD97C3B003A744E /* DonateNow.app */;
+			productType = "com.apple.product-type.application";
+		};
+		18A5CAFC2FD97C3F003A744E /* DonateNowTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 18A5CB152FD97C3F003A744E /* Build configuration list for PBXNativeTarget "DonateNowTests" */;
+			buildPhases = (
+				18A5CAF92FD97C3F003A744E /* Sources */,
+				18A5CAFA2FD97C3F003A744E /* Frameworks */,
+				18A5CAFB2FD97C3F003A744E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				18A5CAFF2FD97C3F003A744E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				18A5CB002FD97C3F003A744E /* DonateNowTests */,
+			);
+			name = DonateNowTests;
+			packageProductDependencies = (
+			);
+			productName = DonateNowTests;
+			productReference = 18A5CAFD2FD97C3F003A744E /* DonateNowTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		18A5CB062FD97C3F003A744E /* DonateNowUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 18A5CB182FD97C3F003A744E /* Build configuration list for PBXNativeTarget "DonateNowUITests" */;
+			buildPhases = (
+				18A5CB032FD97C3F003A744E /* Sources */,
+				18A5CB042FD97C3F003A744E /* Frameworks */,
+				18A5CB052FD97C3F003A744E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				18A5CB092FD97C3F003A744E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				18A5CB0A2FD97C3F003A744E /* DonateNowUITests */,
+			);
+			name = DonateNowUITests;
+			packageProductDependencies = (
+			);
+			productName = DonateNowUITests;
+			productReference = 18A5CB072FD97C3F003A744E /* DonateNowUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		18A5CAE42FD97C3B003A744E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					18A5CAEB2FD97C3B003A744E = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					18A5CAFC2FD97C3F003A744E = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 18A5CAEB2FD97C3B003A744E;
+					};
+					18A5CB062FD97C3F003A744E = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 18A5CAEB2FD97C3B003A744E;
+					};
+				};
+			};
+			buildConfigurationList = 18A5CAE72FD97C3B003A744E /* Build configuration list for PBXProject "DonateNow" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 18A5CAE32FD97C3B003A744E;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				18A5CB652FD9917D003A744E /* XCRemoteSwiftPackageReference "razorpay-pod" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 18A5CAED2FD97C3B003A744E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				18A5CAEB2FD97C3B003A744E /* DonateNow */,
+				18A5CAFC2FD97C3F003A744E /* DonateNowTests */,
+				18A5CB062FD97C3F003A744E /* DonateNowUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		18A5CAEA2FD97C3B003A744E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				18A5CB692FD991FA003A744E /* Config.xcconfig in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18A5CAFB2FD97C3F003A744E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18A5CB052FD97C3F003A744E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		18A5CAE82FD97C3B003A744E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18A5CAF92FD97C3F003A744E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18A5CB032FD97C3F003A744E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		18A5CAFF2FD97C3F003A744E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 18A5CAEB2FD97C3B003A744E /* DonateNow */;
+			targetProxy = 18A5CAFE2FD97C3F003A744E /* PBXContainerItemProxy */;
+		};
+		18A5CB092FD97C3F003A744E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 18A5CAEB2FD97C3B003A744E /* DonateNow */;
+			targetProxy = 18A5CB082FD97C3F003A744E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		18A5CB112FD97C3F003A744E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = DonateNow/DonateNow.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DonateNow/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anupam.DonateNow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		18A5CB122FD97C3F003A744E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = DonateNow/DonateNow.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DonateNow/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anupam.DonateNow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		18A5CB132FD97C3F003A744E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		18A5CB142FD97C3F003A744E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		18A5CB162FD97C3F003A744E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anupam.DonateNowTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DonateNow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DonateNow";
+			};
+			name = Debug;
+		};
+		18A5CB172FD97C3F003A744E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anupam.DonateNowTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DonateNow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DonateNow";
+			};
+			name = Release;
+		};
+		18A5CB192FD97C3F003A744E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anupam.DonateNowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DonateNow;
+			};
+			name = Debug;
+		};
+		18A5CB1A2FD97C3F003A744E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 18A5CB682FD991FA003A744E /* Config.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = B9RTUU8LB9;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.anupam.DonateNowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = DonateNow;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		18A5CAE72FD97C3B003A744E /* Build configuration list for PBXProject "DonateNow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18A5CB132FD97C3F003A744E /* Debug */,
+				18A5CB142FD97C3F003A744E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		18A5CB102FD97C3F003A744E /* Build configuration list for PBXNativeTarget "DonateNow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18A5CB112FD97C3F003A744E /* Debug */,
+				18A5CB122FD97C3F003A744E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		18A5CB152FD97C3F003A744E /* Build configuration list for PBXNativeTarget "DonateNowTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18A5CB162FD97C3F003A744E /* Debug */,
+				18A5CB172FD97C3F003A744E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		18A5CB182FD97C3F003A744E /* Build configuration list for PBXNativeTarget "DonateNowUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18A5CB192FD97C3F003A744E /* Debug */,
+				18A5CB1A2FD97C3F003A744E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+		18A5CB652FD9917D003A744E /* XCRemoteSwiftPackageReference "razorpay-pod" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/razorpay/razorpay-pod";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.4;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		18A5CB592FD99130003A744E /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		18A5CB5B2FD99130003A744E /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		18A5CB5D2FD99130003A744E /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		18A5CB5F2FD99130003A744E /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		18A5CB612FD99130003A744E /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		18A5CB632FD99130003A744E /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18A5CB582FD99130003A744E /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		18A5CB662FD9917D003A744E /* RazorpayCheckout */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 18A5CB652FD9917D003A744E /* XCRemoteSwiftPackageReference "razorpay-pod" */;
+			productName = RazorpayCheckout;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 18A5CAE42FD97C3B003A744E /* Project object */;
+}
