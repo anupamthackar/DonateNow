@@ -7,7 +7,7 @@
 
 ## 1. Business Idea
 
-**DonateNow** — A simple, transparent digital donation platform for local NGOs.
+**DonateNow** — A native iOS donation app for local NGOs, enabling transparent and seamless digital donations.
 
 ---
 
@@ -35,28 +35,28 @@ Donor contacts NGO
 | 1 | No centralized donor tracking | Donor data lost, no follow-up possible |
 | 2 | Manual bank statement reconciliation | Time-consuming, error-prone |
 | 3 | No instant confirmation to donor | Poor donor experience, trust issues |
-| 4 | No donation page | NGO cannot share a single link for donations |
+| 4 | No donation interface | NGO cannot provide a simple way to donate |
 | 5 | No reporting capability | Cannot show transparency to stakeholders |
 
 ---
 
 ## 3. Proposed Solution
 
-Build a **simple donation platform** with:
-1. A **public donation page** displaying the cause and predefined amounts
-2. **Razorpay payment integration** for instant, secure payments
-3. A **thank-you page** after successful donation
-4. An **admin panel** for the NGO team to view donor details
+Build a **native iOS donation app** with:
+1. A **donation screen** displaying the cause and predefined amounts
+2. **Razorpay iOS SDK integration** for instant, secure payments
+3. A **thank-you screen** after successful donation
+4. An **admin section** within the app for the NGO team to view donor details
 
 ### Future Process (To-Be)
 ```
-NGO shares donation link
-  → Donor visits donation page
+NGO shares app / App Store link
+  → Donor opens app on iPhone/iPad
     → Donor selects amount + fills info
       → Donor pays via Razorpay (card/UPI/netbanking)
-        → Thank-you page displayed instantly
-          → Donation auto-recorded in database
-            → Admin views donor log anytime
+        → Thank-you screen displayed instantly
+          → Donation auto-recorded in Supabase
+            → Admin views donor log in-app anytime
 ```
 
 ---
@@ -66,7 +66,7 @@ NGO shares donation link
 | User Type | Description | Actions |
 |---|---|---|
 | **Donor** | General public, supporters, well-wishers | View cause, donate, receive confirmation |
-| **NGO Admin** | NGO team members managing donations | Login, view donor log, track totals |
+| **NGO Admin** | NGO team members managing donations | Login in-app, view donor log, track totals |
 
 ---
 
@@ -74,11 +74,11 @@ NGO shares donation link
 
 | # | Goal | Metric |
 |---|---|---|
-| 1 | Digitize donation collection | 100% donations via platform |
+| 1 | Digitize donation collection | 100% donations via app |
 | 2 | Eliminate manual tracking | Zero spreadsheet dependency |
-| 3 | Improve donor experience | Thank-you page within 3 seconds |
+| 3 | Improve donor experience | Thank-you screen within 3 seconds |
 | 4 | Enable donor transparency | Admin dashboard with real-time data |
-| 5 | Provide a shareable donation link | Single URL for all donation campaigns |
+| 5 | Provide a native mobile experience | Universal iOS app (iPhone + iPad) |
 
 ---
 
@@ -86,37 +86,42 @@ NGO shares donation link
 
 | # | Feature | User | Priority |
 |---|---|---|---|
-| 1 | Public Donation Page | Donor | P0 — Must Have |
-| 2 | Razorpay Payment Integration | Donor | P0 — Must Have |
-| 3 | Thank-You Page | Donor | P0 — Must Have |
-| 4 | Admin Login | Admin | P0 — Must Have |
+| 1 | Donation Screen | Donor | P0 — Must Have |
+| 2 | Razorpay Payment Integration (iOS SDK) | Donor | P0 — Must Have |
+| 3 | Thank-You Screen | Donor | P0 — Must Have |
+| 4 | Admin Login (in-app) | Admin | P0 — Must Have |
 | 5 | Admin Dashboard (Stats) | Admin | P1 — Important |
 | 6 | Donor Log Table | Admin | P0 — Must Have |
 
 ---
 
-## 7. Suggested Tech Stack
+## 7. Tech Stack
 
 | Layer | Technology | Reason |
 |---|---|---|
-| Frontend + Backend | Next.js | Full-stack, SSR, API routes, fast |
-| Database + Auth | Supabase | PostgreSQL, built-in auth, RLS, free tier |
-| Payments | Razorpay (Test Mode) | India-focused, easy integration, test mode available |
-| Hosting | Vercel | Free, seamless Next.js deployment |
+| UI Framework | SwiftUI | Native iOS, declarative, Universal (iPhone + iPad) |
+| Language | Swift 5.9+ | Modern, safe, Apple-native |
+| Database + Auth | Supabase (supabase-swift SDK) | PostgreSQL, built-in auth, RLS, free tier |
+| Payments | Razorpay iOS SDK | India-focused, easy integration, test mode available |
+| Architecture | MVVM | SwiftUI standard, clean separation |
+| Minimum Target | iOS 16+ | Broad device support, modern SwiftUI features |
+| Device Support | Universal (iPhone + iPad) | Maximum reach |
+| Distribution | Xcode Simulator (dev) | No Apple Developer Account |
 
 ---
 
 ## 8. Demo Scenario
 
 ```
-1. A user visits the donation page
-2. Selects ₹500 as donation amount
-3. Fills in name and email
-4. Clicks "Donate Now"
-5. Completes payment via Razorpay Checkout
-6. Thank-you page is displayed with donation details
-7. Admin logs into admin panel
-8. Admin sees the ₹500 donation in the donor log
+1. User opens DonateNow app on iPhone/iPad
+2. Views the cause with title, description, and progress
+3. Selects ₹500 as donation amount
+4. Fills in name and email
+5. Taps "Donate Now"
+6. Completes payment via Razorpay Checkout (iOS)
+7. Thank-you screen is displayed with donation details
+8. Admin logs into admin section within the app
+9. Admin sees the ₹500 donation in the donor log
 ```
 
 ---
@@ -124,7 +129,7 @@ NGO shares donation link
 ## 9. Success Criteria
 
 - [ ] Payment flow works successfully in test mode
-- [ ] Thank-you page is displayed after donation
+- [ ] Thank-you screen is displayed after donation
 - [ ] Admin can view the donor log
 
 ---
@@ -134,7 +139,9 @@ NGO shares donation link
 - MVP scope only — no recurring donations, no receipt generation, no multi-cause support
 - Test mode only — no real money processed during development
 - Single admin role — no role hierarchy
-- No mobile app — web only
+- No Apple Developer Account — Xcode Simulator distribution only
+- iOS only — no Android, no web
+- No push notifications in MVP
 
 ---
 

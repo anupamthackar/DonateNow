@@ -1,178 +1,104 @@
-# Security & Authentication — DonateNow
+# Security Policy — DonateNow
 
 > Reference: [PRD.mdc](../PRD.mdc) | [architecture.mdc](./architecture.mdc) | [ERD.mdc](./ERD.mdc)
 
 ---
 
-## 1. Authentication Strategy
+## 1. Threat Model
 
-### Public Pages (No Auth Required)
-- Donation Page (`/`)
-- Thank-You Page (`/thank-you`)
+**Assets to Protect:**
+- Donor PII (Name, Email, Phone)
+- Donation integrity (Amount, Status)
+- Admin credentials
+- Service credentials (Razorpay Secret, Supabase Service Role)
 
-### Admin Panel (Auth Required)
-- Admin Dashboard (`/admin`)
-- Donor Log (`/admin/donors`)
-
-### Auth Implementation
-- Provider: **Supabase Auth**
-- Method: Email + Password (Admin only)
-- Session: JWT-based, stored in HTTP-only cookie
-- Session Expiry: 24 hours
-- Refresh Token: Enabled via Supabase
-
-### Admin Access Control
-- Role: `admin`
-- Default Admin: Seeded during setup
-- No public registration for admin
-- Admin accounts created manually via Supabase dashboard or seed script
+**Threat Vectors:**
+- Reverse engineering the iOS app to extract keys
+- Man-in-the-Middle (MitM) attacks intercepting payment payloads
+- Forging payment success callbacks in the iOS app
+- Scraping the Supabase database via public API
 
 ---
 
-## 2. API Security
+## 2. API Key Management
 
-### Razorpay Integration
-- API Keys stored in environment variables (`.env.local`)
-- **Never expose `key_secret` to client-side**
-- `key_id` is public-safe (used in frontend checkout)
-- `key_secret` used only in server-side API routes
-
-### Webhook Security
-- Razorpay webhook signature verification is **mandatory**
-- Use `razorpay.webhooks.verify()` with `webhook_secret`
-- Reject all requests with invalid signatures
-- Webhook endpoint: `/api/webhook/razorpay`
-- Allowed IPs: Razorpay IP whitelist (production only)
-
-### API Route Protection
-```
-Public Routes (No Auth):
-  POST /api/create-order        → Create Razorpay order
-  POST /api/verify-payment      → Verify payment signature
-  POST /api/webhook/razorpay    → Razorpay webhook handler
-
-Protected Routes (Admin Auth Required):
-  GET  /api/admin/donations     → Fetch donor log
-  GET  /api/admin/stats         → Fetch dashboard stats
-```
-
-### Rate Limiting
-- `/api/create-order`: 10 requests/minute per IP
-- `/api/webhook/razorpay`: No rate limit (Razorpay server)
-- `/api/admin/*`: 60 requests/minute per session
-
----
-
-## 3. Data Protection
-
-### Donor Data Classification
-| Data Field | Sensitivity | Storage | Encryption |
+| Key | Location | Access Level | Risk |
 |---|---|---|---|
-| Donor Name | Medium | Supabase | At rest (Supabase default) |
-| Donor Email | Medium | Supabase | At rest (Supabase default) |
-| Donor Phone | Medium | Supabase | At rest (Supabase default) |
-| Donation Amount | Low | Supabase | At rest (Supabase default) |
-| Razorpay Payment ID | Medium | Supabase | At rest (Supabase default) |
-| Razorpay Order ID | Low | Supabase | At rest (Supabase default) |
-| Card/UPI Details | Critical | **Never stored** | Handled by Razorpay |
+| `SUPABASE_URL` | Config.xcconfig | Public | Low (safe to expose) |
+| `SUPABASE_ANON_KEY` | Config.xcconfig | Public | Low (safe to expose, restricted by RLS) |
+| `RAZORPAY_KEY_ID` | Config.xcconfig | Public | Low (safe to expose) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Vault | Server Only | **CRITICAL** (bypasses RLS) |
+| `RAZORPAY_KEY_SECRET` | Supabase Vault | Server Only | **CRITICAL** (signs requests) |
+| `RAZORPAY_WEBHOOK_SECRET` | Supabase Vault | Server Only | **CRITICAL** (verifies webhooks) |
 
-### Key Rules
-1. **Never store card numbers, CVV, or UPI PINs** — Razorpay handles all payment data
-2. Store only Razorpay reference IDs (payment_id, order_id, signature)
-3. Supabase Row Level Security (RLS) enabled on all tables
-4. Admin-only read access on `donations` table
-5. No public read/write on any table
+**Rule**: The iOS project must NEVER contain any secret keys. Only public/anon keys are permitted in `.xcconfig` files.
 
 ---
 
-## 4. Supabase Row Level Security (RLS)
+## 3. iOS Client Security
 
-### `donations` Table
-```sql
--- Enable RLS
-ALTER TABLE donations ENABLE ROW LEVEL SECURITY;
+### 3.1 App Transport Security (ATS)
+- **Enforcement**: ATS is enabled by default in iOS.
+- **Rule**: Do not add exceptions to ATS in `Info.plist`. All traffic to Supabase and Razorpay must use HTTPS.
 
--- Allow insert from service role only (webhook/API route)
-CREATE POLICY "Service role can insert donations"
-  ON donations FOR INSERT
-  TO service_role
-  WITH CHECK (true);
+### 3.2 Keychain Storage
+- **Enforcement**: Supabase Swift SDK automatically uses the iOS Keychain to store Auth session tokens (JWTs).
+- **Rule**: Do not implement custom UserDefaults storage for session tokens.
 
--- Allow read for authenticated admin users only
-CREATE POLICY "Admin can read donations"
-  ON donations FOR SELECT
-  TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
+### 3.3 Payment Verification
+- **Vulnerability**: A malicious user could decompile the app, intercept the Razorpay success callback, and manually call a "save donation" API with a fake `razorpay_payment_id`.
+- **Mitigation**: The iOS app must send the signature to the `verify-payment` Edge Function. The function verifies the signature server-side before inserting the record.
 
--- No public access
--- No update or delete allowed
-```
+---
+
+## 4. Database Security (Supabase RLS)
+
+Row Level Security (RLS) is the primary defense for the database.
 
 ### `causes` Table
-```sql
--- Public can read causes (for donation page)
-CREATE POLICY "Public can read causes"
-  ON causes FOR SELECT
-  TO anon
-  USING (is_active = true);
+- **Read**: Public (Anon key). Allow anyone to fetch the active cause.
+- **Write**: Admin only. No public modifications allowed.
 
--- Only admin can modify causes
-CREATE POLICY "Admin can manage causes"
-  ON causes FOR ALL
-  TO authenticated
-  USING (auth.jwt() ->> 'role' = 'admin');
-```
+### `donations` Table
+- **Read**: Admin only. Public cannot view the donor list.
+- **Write**: Service Role only (via Edge Function). iOS app cannot insert directly using the Anon key. This prevents users from spamming fake donation records.
+
+### `admin_users` Table
+- **Read**: Admin only.
+- **Write**: Supabase Dashboard only (manual setup).
 
 ---
 
-## 5. Environment Variables Security
+## 5. Webhook Security
 
-### Storage Rules
-1. All secrets in `.env.local` (never committed to git)
-2. `.env.local` added to `.gitignore`
-3. Production secrets in Vercel Environment Variables (encrypted)
-4. Separate keys for test mode and production mode
+The `razorpay-webhook` Edge Function receives events from Razorpay.
 
-### Required Secrets
-```
-NEXT_PUBLIC_RAZORPAY_KEY_ID     → Public (safe for client)
-RAZORPAY_KEY_SECRET             → Server-only (never expose)
-RAZORPAY_WEBHOOK_SECRET         → Server-only (webhook verification)
-NEXT_PUBLIC_SUPABASE_URL        → Public (safe for client)
-NEXT_PUBLIC_SUPABASE_ANON_KEY   → Public (safe with RLS)
-SUPABASE_SERVICE_ROLE_KEY       → Server-only (bypasses RLS)
-```
-
-### Naming Convention
-- `NEXT_PUBLIC_*` → Safe for client-side exposure
-- No prefix → Server-side only, never bundled to client
+- **Verification**: Must verify the `X-Razorpay-Signature` header using the `RAZORPAY_WEBHOOK_SECRET`.
+- **Idempotency**: Must handle duplicate webhook deliveries gracefully (e.g., checking if the donation status is already `completed`).
 
 ---
 
-## 6. Security Checklist
+## 6. Admin Authentication
 
-- [ ] Razorpay `key_secret` never in client-side code
-- [ ] Webhook signature verified on every webhook call
-- [ ] Supabase RLS enabled on all tables
-- [ ] Admin routes protected by Supabase Auth
-- [ ] `.env.local` in `.gitignore`
-- [ ] No donor PII exposed in client-side logs
-- [ ] HTTPS enforced in production
-- [ ] CORS restricted to own domain in production
-- [ ] CSP headers configured
-- [ ] No sensitive data in URL parameters
+- **Provider**: Supabase Auth (Email/Password).
+- **Session Lifespan**: Handled by Supabase SDK.
+- **Password Policy**: Enforced by Supabase (minimum 6 characters).
+- **Logout**: Must clear the Keychain session upon logout.
 
 ---
 
-## 7. Compliance Notes
+## 7. Data Privacy
 
-### For Test Mode
-- Use Razorpay Test Keys only
-- Test card: `4111 1111 1111 1111`
-- Test UPI: `success@razorpay`
-- No real money processed
+- **Data Minimization**: Phone number is optional. No physical address collected.
+- **No Card Data**: The app never sees, touches, or transmits credit card numbers. The Razorpay SDK handles all PCI-DSS compliant data collection inside an isolated webview/native sheet.
 
-### For Production (Future)
-- PCI-DSS compliance handled by Razorpay (SAQ-A eligible)
-- GDPR considerations for donor data (if international donors)
-- Data retention policy: Define with NGO stakeholders
+---
+
+## 8. Security Checklist Before Launch
+
+- [ ] Ensure `RAZORPAY_KEY_SECRET` is NOT in the Xcode project.
+- [ ] Run iOS app on physical device and verify traffic is HTTPS.
+- [ ] Attempt to query `donations` using Supabase REST API without auth (should return 401/Empty).
+- [ ] Attempt to send fake payload to `verify-payment` function with invalid signature (should reject).
+- [ ] Attempt to send fake webhook payload to `razorpay-webhook` (should reject).
+- [ ] Ensure RLS is enabled on all tables in Supabase Dashboard.

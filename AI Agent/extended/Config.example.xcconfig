@@ -1,0 +1,28 @@
+// Config.example.xcconfig — DonateNow
+//
+// 1. Copy this file and rename to `Config.xcconfig`
+// 2. Do NOT commit `Config.xcconfig` to version control
+// 3. Add these keys to your app's Info.plist using $(KEY_NAME)
+//
+// > Reference: architecture.mdc | security.mdc
+
+// --- Supabase Client (iOS App) ---
+// Find these in Supabase Dashboard -> Settings -> API
+SUPABASE_URL = https://your-project-ref.supabase.co
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsIn...
+
+// --- Razorpay Client (iOS App) ---
+// Find this in Razorpay Dashboard -> Settings -> API Keys
+RAZORPAY_KEY_ID = rzp_test_yourkeyid
+
+// ==============================================================================
+// ⚠️ DANGER: DO NOT ADD SERVER SECRETS TO THIS FILE ⚠️
+//
+// The following keys belong in Supabase Vault for Edge Functions ONLY.
+// They must NEVER be included in the iOS project.
+//
+// Add them via Supabase CLI:
+// $ supabase secrets set SUPABASE_SERVICE_ROLE_KEY=eyJ...
+// $ supabase secrets set RAZORPAY_KEY_SECRET=your_secret_key
+// $ supabase secrets set RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+// ==============================================================================

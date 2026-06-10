@@ -97,10 +97,10 @@
 
 | Status | Description | Triggered By |
 |---|---|---|
-| `initiated` | Order created, payment not started | `/api/create-order` |
-| `pending` | Payment completed, verification pending | `/api/verify-payment` |
-| `completed` | Payment confirmed via webhook | `/api/webhook/razorpay` |
-| `failed` | Payment failed or timed out | `/api/webhook/razorpay` |
+| `initiated` | Order created, payment not started | Edge Function: `create-order` |
+| `pending` | Payment completed, verification pending | Edge Function: `verify-payment` |
+| `completed` | Payment confirmed via webhook | Edge Function: `razorpay-webhook` |
+| `failed` | Payment failed or timed out | Edge Function: `razorpay-webhook` |
 | `refunded` | Payment refunded (manual action) | Admin / Razorpay Dashboard |
 
 ---

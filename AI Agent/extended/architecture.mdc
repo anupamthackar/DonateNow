@@ -1,38 +1,31 @@
-# System Architecture — DonateNow
+# Technical Architecture — DonateNow
 
-> Reference: [PRD.mdc](../PRD.mdc) | [Personas](../persona/) | [ERD.mdc](./ERD.mdc) | [security.mdc](./security.mdc)
+> Reference: [PRD.mdc](../PRD.mdc) | [Personas](../persona/) | [ERD.mdc](./ERD.mdc)
 
 ---
 
 ## 1. Architecture Overview
 
-### System Type
-Monolithic Full-Stack Application (Next.js)
+DonateNow follows an **MVVM (Model-View-ViewModel)** architecture native to SwiftUI, integrated with a **Serverless Backend** (Supabase) via Swift SDK and Edge Functions.
 
-### Architecture Pattern
-Server-Side Rendering (SSR) + API Routes + External Payment Gateway
-
-### Core Components
 ```
-┌─────────────────────────────────────────────────────┐
-│                    NEXT.JS APP                       │
-│                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
-│  │  Public Pages │  │  Admin Panel │  │ API Routes│ │
-│  │  - Donate     │  │  - Dashboard │  │ - Orders  │ │
-│  │  - Thank You  │  │  - Donor Log │  │ - Verify  │ │
-│  │               │  │  - Login     │  │ - Webhook │ │
-│  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘ │
-│         │                 │                 │       │
-└─────────┼─────────────────┼─────────────────┼───────┘
-          │                 │                 │
-          ▼                 ▼                 ▼
-┌──────────────┐   ┌──────────────┐   ┌──────────────┐
-│   RAZORPAY   │   │   SUPABASE   │   │   SUPABASE   │
-│  (Payments)  │   │    (Auth)    │   │  (Database)  │
-│  - Checkout  │   │  - Admin JWT │   │  - donations │
-│  - Webhooks  │   │  - Sessions  │   │  - causes    │
-└──────────────┘   └──────────────┘   └──────────────┘
+┌────────────────────────────────────────────────────────┐
+│                      iOS App                           │
+│                                                        │
+│  ┌──────────────┐    ┌──────────────┐   ┌───────────┐  │
+│  │ SwiftUI Views│◄───┤ ViewModels   ├──►│ Repositories│  │
+│  └──────────────┘    └──────────────┘   └─────┬─────┘  │
+└───────────────────────────────────────────────┼────────┘
+                                                │
+          ┌─────────────────────────────────────┴────────────┐
+          │                                                  │
+┌─────────▼─────────┐    ┌──────────────────┐    ┌───────────▼────────┐
+│  Razorpay iOS SDK │    │ Supabase Auth    │    │ Supabase Database  │
+└─────────┬─────────┘    └──────────────────┘    └────────────────────┘
+          │                                                  ▲
+┌─────────▼─────────┐    ┌──────────────────┐                │
+│ Razorpay API      │◄───┤ Edge Functions   ├────────────────┘
+└───────────────────┘    └──────────────────┘
 ```
 
 ---
@@ -41,193 +34,121 @@ Server-Side Rendering (SSR) + API Routes + External Payment Gateway
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| Frontend | Next.js 14+ (App Router) | SSR, Client Components, Routing |
-| Styling | CSS Modules / Vanilla CSS | Scoped styling, no external deps |
-| Backend | Next.js API Routes | Order creation, payment verification, webhooks |
-| Database | Supabase (PostgreSQL) | Donor data, donation records, causes |
-| Auth | Supabase Auth | Admin login, JWT sessions |
-| Payments | Razorpay (Test Mode) | Payment gateway, checkout, webhooks |
-| Hosting | Vercel | Deployment, serverless functions |
+| UI / Presentation | **SwiftUI** | Declarative native UI for iOS/iPadOS |
+| Business Logic | **Swift ViewModels** | Form validation, state holding, SDK orchestration |
+| Navigation | **NavigationStack** | Hierarchical routing within the app |
+| Data Models | **Swift Structs** | Strongly-typed Codable data structures |
+| Backend Services | **Supabase Swift SDK** | Direct DB queries, Auth session management |
+| Secure Logic | **Supabase Edge Functions** | Order creation, payment verification, webhooks |
+| Payments | **Razorpay iOS SDK** | Native payment sheet presentation |
+| Dependency Mgt | **Swift Package Manager**| Managing SDK versions |
 
 ---
 
-## 3. Page Architecture
+## 3. Xcode Project Structure
 
-### Public Pages (No Auth)
 ```
-/ (Home / Donation Page)
-├── Cause display (fetched from Supabase)
-├── Predefined amount buttons (₹100, ₹500, ₹1000, ₹2000)
-├── Custom amount input
-├── Donor info form (name, email, phone)
-└── "Donate Now" button → Razorpay Checkout
+DonateNow/
+├── DonateNowApp.swift            ← App entry point, env injection
+├── Configuration/
+│   ├── Config.xcconfig           ← API keys, environment URLs
+│   └── Info.plist
+├── Models/                       ← Codable Structs
+│   ├── Cause.swift
+│   ├── Donation.swift
+│   └── APIError.swift
+├── Views/                        ← SwiftUI Views
+│   ├── Public/
+│   │   ├── DonationView.swift
+│   │   └── ThankYouView.swift
+│   ├── Admin/
+│   │   ├── AdminLoginView.swift
+│   │   ├── AdminDashboardView.swift
+│   │   └── DonorLogView.swift
+│   └── Components/
+│       ├── CauseCardView.swift
+│       ├── CustomTextField.swift
+│       └── LoadingStateView.swift
+├── ViewModels/                   ← Logic & State
+│   ├── DonationViewModel.swift
+│   ├── AdminAuthViewModel.swift
+│   └── DashboardViewModel.swift
+├── Services/                     ← External Interactions
+│   ├── SupabaseManager.swift     ← Singleton client init
+│   ├── PaymentService.swift      ← Razorpay wrapper
+│   └── Repositories/
+│       ├── CauseRepository.swift
+│       └── DonationRepository.swift
+├── Utils/                        ← Helpers
+│   ├── Constants.swift
+│   ├── Formatters.swift
+│   └── Validators.swift
+└── Theme/                        ← UI styling
+    ├── Color+Extensions.swift
+    ├── Typography.swift
+    └── ViewModifiers.swift
 
-/thank-you
-├── Success message
-├── Donation summary (amount, reference ID)
-├── Share buttons (optional)
-└── "Donate Again" link
-```
-
-### Admin Pages (Auth Required)
-```
-/admin/login
-├── Email + Password form
-└── Supabase Auth sign-in
-
-/admin (Dashboard)
-├── Total donations count
-├── Total amount raised
-├── Recent donations list
-└── Date range filter
-
-/admin/donors
-├── Searchable donor table
-├── Columns: Name, Email, Amount, Date, Payment ID
-├── Export option (optional)
-└── Pagination
-```
-
----
-
-## 4. API Route Architecture
-
-### `/api/create-order` (POST)
-```
-Client sends: { amount, currency }
-Server does:
-  1. Validate amount (min ₹1, max ₹100000)
-  2. Create Razorpay order via SDK
-  3. Return { order_id, amount, currency, key_id }
-Client receives: order_id → opens Razorpay Checkout
-```
-
-### `/api/verify-payment` (POST)
-```
-Client sends: { razorpay_order_id, razorpay_payment_id, razorpay_signature, donor_info }
-Server does:
-  1. Verify signature using key_secret
-  2. If valid → Insert donation record into Supabase
-  3. Return { success: true, donation_id }
-Client receives: success → redirect to /thank-you
-```
-
-### `/api/webhook/razorpay` (POST)
-```
-Razorpay sends: payment event payload
-Server does:
-  1. Verify webhook signature
-  2. If payment.captured → Update donation status to 'completed'
-  3. If payment.failed → Update donation status to 'failed'
-  4. Return 200 OK
-```
-
-### `/api/admin/donations` (GET) — Protected
-```
-Admin sends: { page, limit, search, date_from, date_to }
-Server does:
-  1. Verify admin session (Supabase Auth)
-  2. Query donations table with filters
-  3. Return paginated results
+supabase/                         ← Backend code (Deploy via CLI)
+├── functions/
+│   ├── create-order/index.ts
+│   ├── verify-payment/index.ts
+│   └── razorpay-webhook/index.ts
+└── migrations/
 ```
 
 ---
 
-## 5. Data Flow — Donation Journey
+## 4. Edge Function Architecture
+
+Edge functions act as the secure bridge between the iOS app and Razorpay.
+
+### `create-order`
+- **Caller**: `DonationViewModel` (via Supabase SDK `functions.invoke`)
+- **Input**: `{ amount: 500, currency: "INR" }`
+- **Logic**: Uses secret `RAZORPAY_KEY_SECRET` to call Razorpay Orders API.
+- **Output**: Returns Razorpay `order_id` to iOS client.
+
+### `verify-payment`
+- **Caller**: `PaymentService` (via delegate callback)
+- **Input**: `{ razorpay_order_id, razorpay_payment_id, signature, donor_data... }`
+- **Logic**: Uses secret `RAZORPAY_KEY_SECRET` to verify signature using HMAC SHA256. If valid, inserts record into Supabase database (bypassing RLS via service_role key).
+- **Output**: `{ success: true, donation_id: "uuid" }`
+
+### `razorpay-webhook`
+- **Caller**: Razorpay Servers
+- **Input**: Event payload (`payment.captured`, `payment.failed`)
+- **Logic**: Verifies webhook signature, updates donation status in database.
+
+---
+
+## 5. Security Architecture
+
+1. **Client-Side Secrets**: Only safe keys (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `RAZORPAY_KEY_ID`) are stored in `Config.xcconfig`.
+2. **Server-Side Secrets**: `RAZORPAY_KEY_SECRET` and `SUPABASE_SERVICE_ROLE_KEY` are stored ONLY as Supabase Edge Function Secrets.
+3. **Database RLS**: Client SDK uses anonymous keys. RLS prevents users from inserting or viewing donations.
+4. **Session Management**: Supabase Swift SDK automatically stores JWT securely in the iOS Keychain.
+
+---
+
+## 6. Navigation Architecture
 
 ```
-Step 1: User visits / (Donation Page)
-  → Next.js SSR fetches active cause from Supabase
-  → Renders cause info + donation form
-
-Step 2: User fills form + clicks "Donate Now"
-  → Client calls POST /api/create-order
-  → Server creates Razorpay order
-  → Client opens Razorpay Checkout popup
-
-Step 3: User completes payment in Razorpay
-  → Razorpay returns payment response to client
-  → Client calls POST /api/verify-payment
-  → Server verifies signature
-  → Server inserts donation into Supabase (status: 'pending')
-  → Client redirects to /thank-you?id=donation_id
-
-Step 4: Razorpay sends webhook
-  → POST /api/webhook/razorpay
-  → Server verifies webhook signature
-  → Updates donation status to 'completed' or 'failed'
-
-Step 5: Admin views /admin
-  → Fetches donations from Supabase
-  → Displays donor log with filters
+App Entry
+   ├── if not logged in admin
+   │      └── TabView
+   │             ├── Tab 1: NavigationStack { DonationView → ThankYouView }
+   │             └── Tab 2: AdminLoginView
+   └── if logged in admin
+          └── TabView
+                 ├── Tab 1: NavigationStack { DonationView → ThankYouView }
+                 └── Tab 2: NavigationStack { AdminDashboardView → DonorLogView }
 ```
 
 ---
 
-## 6. Component Architecture
+## 7. Build & Deployment Architecture
 
-```
-src/
-├── app/
-│   ├── layout.js              → Root layout
-│   ├── page.js                → Donation page
-│   ├── thank-you/
-│   │   └── page.js            → Thank-you page
-│   ├── admin/
-│   │   ├── login/
-│   │   │   └── page.js        → Admin login
-│   │   ├── page.js            → Admin dashboard
-│   │   └── donors/
-│   │       └── page.js        → Donor log
-│   └── api/
-│       ├── create-order/
-│       │   └── route.js       → Create Razorpay order
-│       ├── verify-payment/
-│       │   └── route.js       → Verify payment
-│       └── webhook/
-│           └── razorpay/
-│               └── route.js   → Razorpay webhook
-├── components/
-│   ├── DonationForm.js        → Amount selector + donor info
-│   ├── CauseCard.js           → Cause display
-│   ├── ThankYouCard.js        → Donation confirmation
-│   ├── AdminSidebar.js        → Admin navigation
-│   ├── DonorTable.js          → Donor log table
-│   ├── StatsCard.js           → Dashboard stat cards
-│   └── LoadingSpinner.js      → Loading state
-├── lib/
-│   ├── supabase/
-│   │   ├── client.js          → Browser Supabase client
-│   │   └── server.js          → Server Supabase client
-│   ├── razorpay.js            → Razorpay SDK init
-│   └── utils.js               → Helper functions
-└── styles/
-    ├── globals.css             → Global styles + CSS variables
-    ├── donation.module.css     → Donation page styles
-    ├── thankyou.module.css     → Thank-you page styles
-    └── admin.module.css        → Admin panel styles
-```
-
----
-
-## 7. Integration Points
-
-### Razorpay SDK
-- Frontend: Load `checkout.js` via script tag
-- Backend: `razorpay` npm package for order creation + verification
-- Mode: **Test Mode** (`key_id` starts with `rzp_test_`)
-
-### Supabase Client
-- Frontend: `@supabase/supabase-js` with `anon` key (RLS enforced)
-- Backend: `@supabase/supabase-js` with `service_role` key (bypasses RLS)
-- Auth: `@supabase/auth-helpers-nextjs` for session management
-
----
-
-## 8. Performance Considerations
-
-- Donation page: SSR for SEO + fast initial load
-- Admin panel: Client-side rendering (CSR) — auth-gated, no SEO needed
-- Images: Next.js `<Image>` component with optimization
-- API routes: Serverless (Vercel) — cold start < 1s
-- Database queries: Indexed on `created_at`, `status`, `donor_email`
+1. **Development**: Xcode Simulator (iPhone 15 Pro, iPad Pro).
+2. **Backend**: Supabase project (hosted). Edge functions deployed via `supabase functions deploy`.
+3. **Testing**: XCTest for ViewModels, XCUITest for UI flows.
+4. **Distribution**: App Store Connect / TestFlight (requires Apple Developer Account).

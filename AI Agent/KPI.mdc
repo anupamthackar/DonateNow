@@ -1,118 +1,88 @@
-# KPI & Acceptance Criteria — DonateNow
+# Key Performance Indicators (KPIs) — DonateNow
 
 > Phase: 03 — Success Metrics
-> Previous: [PRD.mdc](./PRD.mdc) | [business_idea.mdc](./business_idea.mdc)
+> Previous: [PRD.mdc](./PRD.mdc)
 > Next: [Personas](./persona/)
-> Verification: [testing.mdc](./extended/testing.mdc)
 
 ---
 
-## 1. Core KPIs (Success Criteria from Problem Statement)
+## 1. Core Success Metrics (MVP Gates)
 
-| KPI Number | KPI Name | Description | Verification Method | Target Value | Status |
+These KPIs must pass before the MVP can be considered "done".
+
+| # | KPI Name | Description | Verification Method | Target | Status |
 |---|---|---|---|---|---|
-| KPI-001 | Payment Flow Works | Complete donation using Razorpay test mode end-to-end | E2E Test (test card: 4111 1111 1111 1111) | 100% success rate | ☐ Pending |
-| KPI-002 | Thank-You Page Displayed | Thank-you page renders after successful payment with donation details | E2E Test — verify redirect to /thank-you + content check | Displayed within 3 seconds | ☐ Pending |
-| KPI-003 | Admin Views Donor Log | Admin can login and view all donation entries in a table | E2E Test — login + table verification | All donations visible | ☐ Pending |
+| **KPI-001** | Payment Flow Success | End-to-end test of Razorpay payment via iOS SDK in test mode. | Manual + XCUITest | 100% success rate | Pending |
+| **KPI-002** | Thank-You View Display | User is navigated to the Thank You view immediately after successful payment. | Manual + XCUITest | Navigates on success | Pending |
+| **KPI-003** | Admin Donor Log View | Admin can log in via the app and view the list of successful donations. | Manual + XCUITest | Data loads successfully | Pending |
 
 ---
 
-## 2. Functional KPIs
+## 2. Functional Metrics
 
-| KPI Number | KPI Name | Description | Verification Method | Target Value | Status |
+| # | KPI Name | Description | Verification Method | Target | Status |
 |---|---|---|---|---|---|
-| KPI-004 | Cause Display | Donation page shows cause title, description, and progress | Manual Testing | Cause data rendered from Supabase | ☐ Pending |
-| KPI-005 | Amount Selection | Donor can select predefined amount or enter custom amount | Unit Test + E2E | ₹100, ₹500, ₹1000, ₹2000 + custom | ☐ Pending |
-| KPI-006 | Donor Form Validation | Required fields validated — name (required), email (required, format), phone (optional) | Unit Test | All validations pass | ☐ Pending |
-| KPI-007 | Payment Signature Verified | Server verifies Razorpay payment signature before saving | Integration Test | Invalid signatures rejected (400) | ☐ Pending |
-| KPI-008 | Webhook Processing | Razorpay webhook updates donation status correctly | Integration Test | payment.captured → completed | ☐ Pending |
-| KPI-009 | Admin Authentication | Admin login with Supabase Auth works, session persists | E2E Test | Login → dashboard redirect | ☐ Pending |
-| KPI-010 | Donor Search | Admin can search donors by name or email | E2E Test | Search returns matching results | ☐ Pending |
-| KPI-011 | Date Filter | Admin can filter donations by date range | E2E Test | Filtered results accurate | ☐ Pending |
-| KPI-012 | Dashboard Stats | Admin sees total donations count and total amount | Integration Test | Aggregated correctly from DB | ☐ Pending |
+| **KPI-004** | Cause Loading | The cause title, description, and target load correctly from Supabase. | XCTest | Matches DB record | Pending |
+| **KPI-005** | Predefined Amounts | Selecting ₹100/₹500/₹1000 populates the form correctly. | XCUITest | UI updates correctly | Pending |
+| **KPI-006** | Custom Amount | User can enter a custom amount between ₹1 and ₹1,00,000. | XCUITest | Accepts valid, rejects invalid | Pending |
+| **KPI-007** | Server-Side Signature | Supabase Edge Function verifies the Razorpay payment signature correctly. | Integration Test | Valid passes, invalid fails | Pending |
+| **KPI-008** | Webhook Processing | Razorpay webhook correctly updates the donation status in Supabase. | Integration Test | Status changes to 'completed' | Pending |
+| **KPI-009** | Admin Auth Persistence | Admin remains logged in across app restarts until explicit logout. | Manual Testing | Session restored | Pending |
+| **KPI-010** | Donor Search | Admin can search the donor log by name or email. | XCUITest | Filters correctly | Pending |
+| **KPI-011** | Date Filtering | Admin can filter the donor log by a specific date range. | XCUITest | Filters correctly | Pending |
+| **KPI-012** | Stats Aggregation | Dashboard total amount and count match the database exactly. | Unit Test (SQL function) | 100% match | Pending |
 
 ---
 
-## 3. Performance KPIs
+## 3. Performance Metrics
 
-| KPI Number | KPI Name | Description | Verification Method | Target Value | Status |
+| # | KPI Name | Description | Verification Method | Target | Status |
 |---|---|---|---|---|---|
-| KPI-013 | Donation Page Load | Time to fully render donation page | Lighthouse CI | < 3 seconds | ☐ Pending |
-| KPI-014 | API Response Time | Response time for create-order and verify-payment | Integration Test + Timing | < 500ms | ☐ Pending |
-| KPI-015 | Admin Dashboard Load | Time to render admin dashboard with stats | Manual + Lighthouse | < 3 seconds | ☐ Pending |
-| KPI-016 | Donor Table Render | Time to render donor table with 100 records | Manual Testing | < 2 seconds | ☐ Pending |
+| **KPI-013** | App Launch Time | Time from app launch to donation screen fully rendered. | Xcode Instruments (Time Profiler) | < 2.0 seconds | Pending |
+| **KPI-014** | API Response Time | Edge Function response time for create-order and verify-payment. | Network Monitor | < 500ms (P90) | Pending |
+| **KPI-015** | Admin Dashboard Load | Time to fetch and render admin stats and recent donations. | Xcode Instruments | < 1.5 seconds | Pending |
+| **KPI-016** | Donor Log Scrolling | Smooth scrolling performance on the donor log list. | Xcode Instruments (Animation) | 60 FPS | Pending |
+| **KPI-017** | Memory Footprint | Max memory usage during standard donation flow. | Xcode Instruments (Allocations) | < 150 MB | Pending |
 
 ---
 
-## 4. Security KPIs
+## 4. Security Metrics (Strict Gates)
 
-| KPI Number | KPI Name | Description | Verification Method | Target Value | Status |
+| # | KPI Name | Description | Verification Method | Target | Status |
 |---|---|---|---|---|---|
-| KPI-017 | No Payment Data Stored | Card/UPI details never stored in Supabase | Security Audit / Code Review | Zero sensitive payment data | ☐ Pending |
-| KPI-018 | Webhook Signature Check | Every webhook call signature-verified | Integration Test | 100% verification rate | ☐ Pending |
-| KPI-019 | Admin Route Protection | All /admin/* routes reject unauthenticated access | Security Test | 401 for unauthenticated | ☐ Pending |
-| KPI-020 | RLS Enforcement | Supabase RLS blocks public read on donations table | RLS Test | Anon role gets zero rows | ☐ Pending |
-| KPI-021 | Secrets Not Exposed | key_secret and service_role never in client bundle | Code Review / Build Audit | Zero client-side exposure | ☐ Pending |
+| **KPI-018** | Zero PCI Data Stored | Ensure no credit card or UPI data is stored in the database or app state. | Code Review + DB Audit | 0 instances | Pending |
+| **KPI-019** | RLS Enabled | Supabase Row Level Security blocks public reads on `donations` and `admin_users`. | API Test (Anonymous) | 401 Unauthorized / Empty Array | Pending |
+| **KPI-020** | Webhook Security | Webhook handler verifies `X-Razorpay-Signature` header. | Integration Test | Rejects missing/invalid | Pending |
+| **KPI-021** | Admin View Protection | Admin views cannot be accessed without a valid Supabase Auth session. | XCUITest | Redirects to login | Pending |
+| **KPI-022** | Secret Storage | No API secrets (Supabase service role, Razorpay key_secret) in iOS source code. | Static Analysis | 0 secrets in iOS code | Pending |
 
 ---
 
-## 5. UX KPIs
+## 5. UX & Quality Metrics
 
-| KPI Number | KPI Name | Description | Verification Method | Target Value | Status |
+| # | KPI Name | Description | Verification Method | Target | Status |
 |---|---|---|---|---|---|
-| KPI-022 | Mobile Responsive | Donation page usable on mobile (360px+) | Manual + Lighthouse | Responsive on all breakpoints | ☐ Pending |
-| KPI-023 | Form Error Messages | Invalid inputs show clear inline errors | Unit Test + Manual | All fields have error states | ☐ Pending |
-| KPI-024 | Loading States | Loading indicators during payment processing | Manual Testing | Spinner/skeleton visible | ☐ Pending |
-| KPI-025 | Error Recovery | User can retry after payment failure | E2E Test | Retry possible without page reload | ☐ Pending |
+| **KPI-023** | Universal Layout | UI adapts correctly to both iPhone and iPad screen sizes. | Simulator (iPhone SE to iPad Pro) | No clipping, correct padding | Pending |
+| **KPI-024** | Form Validation Feedback | Invalid inputs show clear inline error messages immediately. | XCUITest | Error text visible | Pending |
+| **KPI-025** | Error State Recovery | Network failures show an alert with a retry option. | Manual (Network Link Conditioner) | Alert shown | Pending |
 
 ---
 
-## 6. Acceptance Criteria Summary
+## Acceptance Gates
 
-### Must Pass (MVP Gate)
-- [x] KPI-001: Payment flow works in test mode
-- [x] KPI-002: Thank-you page displayed
-- [x] KPI-003: Admin can view donor log
-- [x] KPI-007: Payment signature verified
-- [x] KPI-009: Admin authentication works
-- [x] KPI-017: No payment data stored
-- [x] KPI-019: Admin routes protected
-
-### Should Pass (Quality Gate)
-- [ ] KPI-004 through KPI-012: All functional KPIs
-- [ ] KPI-013 through KPI-016: All performance KPIs
-- [ ] KPI-022 through KPI-025: All UX KPIs
-
-### Must Pass (Security Gate)
-- [x] KPI-017 through KPI-021: All security KPIs
-
----
-
-## 7. KPI Verification Schedule
-
-| Phase | KPIs to Verify | When |
+| Gate | Required KPIs | Who Approves |
 |---|---|---|
-| After Frontend Complete | KPI-004, 005, 006, 022, 023, 024 | Sprint 1 |
-| After Backend Complete | KPI-007, 008, 014, 017, 018 | Sprint 1 |
-| After Integration | KPI-001, 002, 003, 012, 025 | Sprint 2 |
-| After Admin Panel | KPI-009, 010, 011, 015, 016, 019, 020 | Sprint 2 |
-| Before Deployment | KPI-013, 021 | Sprint 3 |
-| Final Review | All KPIs | Sprint 3 |
+| **Security Review** | KPI-018, KPI-019, KPI-020, KPI-021, KPI-022 | Developer / Security Persona |
+| **QA / Testing** | KPI-004 through KPI-012, KPI-023 through KPI-025 | Developer / Test Persona |
+| **Performance** | KPI-013 through KPI-017 | Developer |
+| **MVP Launch** | KPI-001, KPI-002, KPI-003 | Project Sponsor |
 
 ---
 
-## 8. KPI Dashboard (For Tracking)
+## Verification Schedule
 
-```
-Total KPIs: 25
-├── Core:        3  (KPI-001 to KPI-003)
-├── Functional: 9  (KPI-004 to KPI-012)
-├── Performance: 4  (KPI-013 to KPI-016)
-├── Security:    5  (KPI-017 to KPI-021)
-└── UX:          4  (KPI-022 to KPI-025)
-
-Status:
-  ☐ Pending:    25
-  ☑ Passed:      0
-  ☒ Failed:      0
-```
+- **Unit Tests (XCTest)**: Run on every commit.
+- **Integration Tests (Edge Functions)**: Run manually before major PRs.
+- **UI Tests (XCUITest)**: Run manually before final delivery.
+- **Performance/Memory Profiling**: Run once before MVP launch.
+- **Security Audit**: Code review before MVP launch.

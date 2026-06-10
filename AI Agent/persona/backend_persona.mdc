@@ -1,115 +1,85 @@
-# Backend Persona — DonateNow
+# Services Persona (Backend) — DonateNow
 
-> Phase: 04 — Personas
-> Previous: [KPI.mdc](../KPI.mdc) | [PRD.mdc](../PRD.mdc) | [business_idea.mdc](../business_idea.mdc)
+> Phase: 04 — Tech Decisions
+> Previous: [KPI.mdc](../KPI.mdc)
 > Next: [Project_Scope.mdc](../Project_Scope.mdc)
-> Extended: [architecture.mdc](../extended/architecture.mdc) | [security.mdc](../extended/security.mdc) | [error_handling.mdc](../extended/error_handling.mdc)
 
 ---
 
-## Tech Stack
+## 1. Identity & Tech Stack
 
-| Technology | Version | Purpose |
-|---|---|---|
-| Next.js API Routes | 14+ (App Router) | Server-side API endpoints |
-| Razorpay Node SDK | Latest | Order creation, signature verification |
-| @supabase/supabase-js | Latest | Server-side DB operations (service role) |
-| @supabase/auth-helpers-nextjs | Latest | Session validation for admin routes |
-| crypto (Node.js built-in) | — | Webhook signature verification |
+**Role**: Services & Integrations Engineer
+**Focus**: Business logic, API communication, external SDKs, security
+**Tech Stack**:
+- **Language**: Swift 5.9+ (Client), TypeScript/Deno (Edge Functions)
+- **Database/Auth SDK**: `supabase-swift`
+- **Payment SDK**: `razorpay-pod` (iOS SDK)
+- **Serverless**: Supabase Edge Functions
+- **Concurrency**: Swift Structured Concurrency (`async/await`)
+- **Package Manager**: Swift Package Manager (SPM)
 
----
-
-## Why Selected
-
-| Decision | Reason |
-|---|---|
-| Next.js API Routes over Express | No separate server needed, same deployment, simpler architecture |
-| Razorpay over Stripe | India-focused, INR native, popular with Indian NGOs, free test mode |
-| Supabase over Firebase | PostgreSQL (relational), built-in RLS, SQL support, free tier generous |
-| Serverless over Server | No infrastructure management, auto-scaling, Vercel handles cold starts |
+### Why this Stack?
+- **supabase-swift**: Official, type-safe client for Supabase on iOS.
+- **Razorpay iOS SDK**: Native payment sheet handles bank OTPs and UPI app switches automatically.
+- **Edge Functions**: Required to keep Razorpay `key_secret` off the device and handle webhooks securely.
 
 ---
 
-## Responsibilities
+## 2. Core Responsibilities
 
-1. Create Razorpay orders via SDK
-2. Verify Razorpay payment signatures
-3. Handle Razorpay webhook events
-4. Insert donation records into Supabase
-5. Update donation status on webhook events
-6. Serve admin API (donations list, stats)
-7. Validate admin authentication on protected routes
-8. Validate all incoming request data
-9. Handle errors gracefully with proper HTTP status codes
-10. Implement idempotent operations for payment processing
+1. Initialize and configure Supabase client in iOS app
+2. Initialize and configure Razorpay SDK in iOS app
+3. Implement `Repository` classes to abstract SDK calls from ViewModels
+4. Write Supabase Edge Functions for secure operations (create order, verify payment)
+5. Implement Razorpay Webhook handler (Edge Function)
+6. Verify Razorpay signatures securely (server-side)
+7. Handle Supabase Auth (login, logout, session persistence via Keychain)
+8. Provide strongly-typed Swift models (`Codable`) mapped to DB tables
+9. Implement robust error handling (mapping network errors to user-friendly Swift `Error` enums)
+10. Ensure PCI compliance (no card data touches iOS code)
 
 ---
 
-## Standards
+## 3. Coding Standards & Rules
 
-### API Design Rules
-1. RESTful conventions for all endpoints
-2. JSON request/response format
-3. Proper HTTP status codes (200, 400, 401, 404, 409, 500, 502)
-4. Error responses always include `{ error: "message" }` format
-5. No business logic in route handlers — extract to utility functions
-6. All request payloads validated before processing
+### SDK & Integration Rules
+- Hide 3rd-party SDKs behind Protocols/Interfaces. ViewModels should not import `Supabase` or `Razorpay`.
+- Use Swift `async/await` for all network calls. Do not use completion handlers.
 
 ### Security Rules
-1. Razorpay `key_secret` never exposed to client
-2. Webhook signature verified on every webhook call — reject if invalid
-3. Admin endpoints verify JWT session before processing
-4. Use `service_role` key only in server-side code
-5. Sanitize all user inputs before database operations
-6. Rate limit sensitive endpoints (order creation)
-7. CORS configured for own domain only in production
-
-### Data Integrity Rules
-1. Payment verification is **atomic** — verify signature + insert donation in one flow
-2. Webhook processing is **idempotent** — duplicate events produce same result
-3. Donation amounts validated server-side (min ₹1, max ₹1,00,000)
-4. Currency hardcoded to INR (no user input for currency)
-5. Razorpay IDs stored for reconciliation (order_id, payment_id)
-6. Never update donation `amount` after creation — immutable
-7. Status transitions follow state machine (see [error_handling.mdc](../extended/error_handling.mdc))
+- **NEVER** include the Razorpay `key_secret` in the Xcode project.
+- **NEVER** include the Supabase `service_role` key in the Xcode project.
+- Use `supabase_anon_key` and `razorpay_key_id` in Xcode Config/Plist.
+- Payment verification MUST happen on Edge Function, never on device.
 
 ### Error Handling Rules
-1. All API routes wrapped in try-catch
-2. External service failures (Razorpay, Supabase) return 502
-3. Validation failures return 400 with descriptive message
-4. Auth failures return 401
-5. Server errors return 500 with generic message (no stack trace in response)
-6. All errors logged with context (see [observability.mdc](../extended/observability.mdc))
+- Define explicit Swift enums conforming to `Error` and `LocalizedError`.
+- Catch network/SDK errors and map them to domain errors.
+- Never crash the app (`fatalError` or `!`) on failed network calls.
+
+### Edge Function Rules
+- Written in TypeScript (Deno) per Supabase standards.
+- Must verify JWT for authenticated routes.
+- Must verify `X-Razorpay-Signature` for webhook route.
 
 ---
 
-## Deliverables
+## 4. Deliverables for this Persona
 
-| # | Deliverable | Route | Method |
-|---|---|---|---|
-| 1 | Create Order API | `/api/create-order/route.js` | POST |
-| 2 | Verify Payment API | `/api/verify-payment/route.js` | POST |
-| 3 | Razorpay Webhook Handler | `/api/webhook/razorpay/route.js` | POST |
-| 4 | Admin Donations API | `/api/admin/donations/route.js` | GET |
-| 5 | Admin Stats API | `/api/admin/stats/route.js` | GET |
-| 6 | Health Check API | `/api/health/route.js` | GET |
-| 7 | Razorpay SDK Utility | `/lib/razorpay.js` | — |
-| 8 | Supabase Server Client | `/lib/supabase/server.js` | — |
-| 9 | Validation Utilities | `/lib/validators.js` | — |
-| 10 | Logging Utility | `/lib/logger.js` | — |
+| File / Component | Purpose |
+|---|---|
+| `SupabaseClient.swift` | Singleton/Dependency config |
+| `PaymentService.swift` | Razorpay SDK wrapper |
+| `DonationRepository.swift` | Fetches/saves donations |
+| `AuthService.swift` | Manages login/session |
+| `Models/*.swift` | Codable structs for DB tables |
+| `supabase/functions/create-order/` | Edge Function for Razorpay order |
+| `supabase/functions/verify-payment/` | Edge Function for signature + DB insert |
+| `supabase/functions/razorpay-webhook/` | Edge Function for payment status updates |
 
 ---
 
-## API Contract Reference
+## 5. Interaction with Other Personas
 
-> Full request/response contracts defined in [PRD.mdc](../PRD.mdc) → Section 4
-
-### Quick Reference
-```
-POST /api/create-order       → { amount, currency } → { order_id, amount, currency, key_id }
-POST /api/verify-payment     → { razorpay_*, donor_* } → { success, donation_id }
-POST /api/webhook/razorpay   → Razorpay event payload → 200 OK
-GET  /api/admin/donations    → ?page&limit&search&date_* → { donations[], total, page, limit }
-GET  /api/admin/stats        → → { total_donations, total_amount, donations_today, amount_today }
-GET  /api/health             → → { status, timestamp, services }
-```
+- **With iOS/UI Persona**: Provides clean, `async` methods returning data or throwing errors. UI doesn't know about HTTP or SDK details.
+- **With Database Persona**: Depends on RLS policies and DB schema to ensure queries succeed or fail correctly.

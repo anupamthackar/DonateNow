@@ -17,15 +17,15 @@
    - Start with the answer or action.
 
 3. **Return only diffs or modified functions.**
-   - Don't return the entire file when editing.
+   - Don't return the entire Swift file when editing one method.
    - Show only changed code blocks.
 
 4. **Do not update unrelated files.**
-   - If asked to fix `/api/create-order`, don't touch components.
+   - If asked to fix `DonationViewModel.swift`, don't touch UI components.
    - Scope to requested changes only.
 
 5. **Use compact code style.**
-   - Minimal but readable.
+   - Minimal but readable Swift.
    - No excessive comments in code.
    - Comments only for non-obvious logic.
 
@@ -40,7 +40,7 @@
    - Don't add features beyond the request.
 
 8. **Reference context files instead of repeating content.**
-   - Say "per PRD Section 4" instead of re-explaining the API contract.
+   - Say "per PRD Section 4" instead of re-explaining the Edge Function contract.
    - Say "per KPI-007" instead of re-describing the verification method.
 
 9. **Ask before refactoring.**
@@ -57,28 +57,29 @@
 
 ### For Code Changes
 ```
-File: src/app/api/create-order/route.js
+File: DonateNow/ViewModels/DonationViewModel.swift
 Change: Added amount validation
 
-+ if (amount < 1 || amount > 100000) {
-+   return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
++ guard amount >= 1 && amount <= 100000 else {
++     self.error = .invalidAmount
++     return
 + }
 ```
 
 ### For Questions
 ```
 Question: What authentication method for admin?
-Answer: Supabase Auth (Email/Password) — per security.mdc Section 1
+Answer: Supabase Auth (Email/Password) via Swift SDK — per security.mdc Section 1
 ```
 
 ### For Feature Implementation
 ```
-Feature: F01 — Donation Page
+Feature: F01 — Donation Screen
 KPIs: KPI-004, KPI-005, KPI-006
 Files:
-  - src/app/page.js (new)
-  - src/components/CauseCard.js (new)
-  - src/components/DonationForm.js (new)
+  - DonateNow/Views/DonationView.swift (new)
+  - DonateNow/ViewModels/DonationViewModel.swift (new)
+  - DonateNow/Models/Cause.swift (new)
 ```
 
 ---
@@ -88,7 +89,7 @@ Files:
 | Action Type | Expected Tokens | Approach |
 |---|---|---|
 | Bug fix | < 200 tokens | Diff only |
-| New component | < 500 tokens | Full file |
-| New API route | < 400 tokens | Full file |
+| New View / ViewModel | < 500 tokens | Full file |
+| New Edge Function | < 400 tokens | Full file |
 | Architecture question | < 100 tokens | Reference context file |
 | Multi-file change | < 800 tokens | Diffs per file |

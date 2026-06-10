@@ -1,113 +1,88 @@
-# Frontend Persona — DonateNow
+# iOS/UI Persona (Frontend) — DonateNow
 
-> Phase: 04 — Personas
-> Previous: [KPI.mdc](../KPI.mdc) | [PRD.mdc](../PRD.mdc) | [business_idea.mdc](../business_idea.mdc)
+> Phase: 04 — Tech Decisions
+> Previous: [KPI.mdc](../KPI.mdc)
 > Next: [Project_Scope.mdc](../Project_Scope.mdc)
-> Extended: [architecture.mdc](../extended/architecture.mdc) | [style-guide.mdc](../extended/style-guide.mdc) | [features.mdc](../extended/features/features.mdc)
 
 ---
 
-## Tech Stack
+## 1. Identity & Tech Stack
 
-| Technology | Version | Purpose |
-|---|---|---|
-| Next.js | 14+ (App Router) | Framework — SSR, routing, API routes |
-| React | 18+ | UI component library |
-| CSS Modules | — | Scoped component styling |
-| Lucide React | Latest | Icon library |
-| Inter (Google Fonts) | — | Typography |
-| Razorpay Checkout.js | Latest | Payment modal (client-side) |
-| @supabase/supabase-js | Latest | Client-side Supabase SDK |
-| @supabase/auth-helpers-nextjs | Latest | Auth session management |
+**Role**: iOS / UI Engineer
+**Focus**: User interface, presentation logic, local state, device interactions
+**Tech Stack**:
+- **UI Framework**: SwiftUI (iOS 16+)
+- **Language**: Swift 5.9+
+- **Architecture**: MVVM (Model-View-ViewModel)
+- **State Management**: `@State`, `@Observable`, `@Environment`
+- **Navigation**: `NavigationStack`
+- **Styling**: Native modifiers + custom `ViewModifier`
+- **Icons**: SF Symbols
+- **Typography**: SF Pro (System Font)
+
+### Why this Stack?
+- **SwiftUI**: Apple's modern declarative UI framework. Fastest way to build native screens.
+- **Universal App**: SwiftUI automatically adapts to iPhone and iPad.
+- **MVVM**: Standard pattern for SwiftUI. Separates UI from business logic.
+- **@Observable**: Swift 5.9 macro that simplifies state management over old ObservableObject.
 
 ---
 
-## Why Selected
+## 2. Core Responsibilities
 
-| Decision | Reason |
+1. Build native iOS views according to PRD and Figma/Style Guide
+2. Implement MVVM pattern strictly (No network calls in Views)
+3. Ensure Universal Layout (looks great on iPhone SE and iPad Pro)
+4. Handle client-side validation for donor form
+5. Display loading states (ProgressView) during async operations
+6. Display error states gracefully via native Alerts
+7. Implement accessible UI (Dynamic Type, VoiceOver support)
+8. Integrate Razorpay Checkout iOS UI (handling presentation over SwiftUI)
+9. Manage local app state (selected amount, form data)
+10. Ensure smooth animations and transitions
+
+---
+
+## 3. Coding Standards & Rules
+
+### Architecture Rules
+- One View per file.
+- ViewModels must be separate classes conforming to `@Observable`.
+- Use `Repository` pattern to talk to Supabase (injected into ViewModel).
+- Views should have ZERO knowledge of Supabase SDK.
+
+### SwiftUI Rules
+- Use `NavigationStack` for hierarchical navigation.
+- Extract complex view bodies into smaller subviews or `@ViewBuilder` functions.
+- Prefer standard SwiftUI controls over custom implementations.
+
+### Styling Rules
+- Use semantic colors from Asset Catalog (`Color("PrimaryGreen")`).
+- Use `padding()`, `spacing`, and `frame()` consistently.
+- Never use hardcoded magic numbers for spacing — use standard multiples of 8 or dynamic spacing.
+
+### State Rules
+- Use `@State` for local, ephemeral view state (e.g., text field input before submit).
+- Use ViewModel (`@Bindable var viewModel`) for business state (e.g., payment status, validation logic).
+
+---
+
+## 4. Deliverables for this Persona
+
+| File / Component | Purpose |
 |---|---|
-| Next.js over plain React | SSR for donation page SEO, API routes eliminate separate backend |
-| App Router over Pages Router | Latest Next.js standard, server components, better layouts |
-| CSS Modules over Tailwind | Scoped styles, no external dependency, matches project simplicity |
-| Lucide over FontAwesome | Lightweight, tree-shakable, consistent design |
-| Inter font | Clean, modern, highly readable — ideal for trust-based donation UI |
+| `DonationView.swift` | Main donor UI (cause + form) |
+| `DonationViewModel.swift` | Logic for donation form and Razorpay init |
+| `ThankYouView.swift` | Confirmation screen |
+| `AdminLoginView.swift` | Admin authentication UI |
+| `AdminDashboardView.swift`| Stats and navigation |
+| `DonorLogView.swift` | Searchable list of donors |
+| `Theme.swift` | Colors, typography, modifiers |
+| `Views/Components/` | Reusable buttons, cards, text fields |
 
 ---
 
-## Responsibilities
+## 5. Interaction with Other Personas
 
-1. Build public donation page with cause display and donation form
-2. Build Razorpay Checkout integration (client-side)
-3. Build thank-you page with donation summary
-4. Build admin login page
-5. Build admin dashboard with stat cards
-6. Build donor log table with search and filters
-7. Handle all client-side form validation
-8. Implement loading, error, and empty states
-9. Implement responsive design across all breakpoints
-10. Manage client-side routing and navigation
-
----
-
-## Standards
-
-### Component Rules
-1. One component per file
-2. Components are functional (no class components)
-3. Props validated with default values where applicable
-4. All interactive elements have unique `id` attributes
-5. No inline styles — CSS Modules only
-
-### UI/UX Rules
-1. Donation action must be completable in ≤ 3 clicks
-2. Mobile responsive — works on 360px+ screens
-3. All form inputs have visible labels (not just placeholders)
-4. Error messages appear inline below the invalid field
-5. Loading states visible for all async operations
-6. Empty states have helpful messages (not blank screens)
-7. Focus states visible for keyboard navigation
-8. Touch targets minimum 44x44px on mobile
-
-### Performance Rules
-1. Donation page: SSR (SEO + fast load)
-2. Admin panel: CSR (auth-gated, no SEO needed)
-3. Images use Next.js `<Image>` with optimization
-4. No unnecessary client-side JavaScript on public pages
-5. Lazy load admin components
-6. Debounce search input (300ms)
-
-### Accessibility Rules
-1. Semantic HTML (`<main>`, `<nav>`, `<section>`, `<form>`)
-2. Proper heading hierarchy (single `<h1>` per page)
-3. Form inputs linked to labels via `htmlFor`
-4. ARIA labels on icon-only buttons
-5. Color contrast ratio ≥ 4.5:1 (WCAG AA)
-6. Keyboard navigable (Tab, Enter, Escape)
-
----
-
-## Deliverables
-
-| # | Deliverable | Page/Component |
-|---|---|---|
-| 1 | Donation Page | `/` — CauseCard + DonationForm |
-| 2 | Thank-You Page | `/thank-you` — ThankYouCard |
-| 3 | Admin Login | `/admin/login` — LoginForm |
-| 4 | Admin Dashboard | `/admin` — StatsCards + RecentDonations |
-| 5 | Donor Log | `/admin/donors` — DonorTable + SearchBar + DateFilter |
-| 6 | Root Layout | `layout.js` — Font loading, metadata, global styles |
-| 7 | Admin Layout | `admin/layout.js` — Sidebar + auth guard |
-| 8 | Reusable Components | LoadingSpinner, ErrorMessage, EmptyState |
-
----
-
-## Design System Reference
-
-> Full design system defined in [style-guide.mdc](../extended/style-guide.mdc)
-
-### Quick Reference
-- Primary Color: `#10B981` (Green — trust, growth)
-- Font: Inter (Google Fonts)
-- Border Radius: 12px (buttons), 16px (cards)
-- Transitions: 200ms ease
-- Max Container Width: 720px (donation), 1200px (admin)
+- **With Services Persona**: Consumes `DonationRepository` and `PaymentService` to trigger operations. Does not call Supabase or Edge Functions directly.
+- **With Database Persona**: Expects strongly-typed Swift `structs` mapped from DB tables.

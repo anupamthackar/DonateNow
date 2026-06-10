@@ -8,188 +8,114 @@
 
 ```
          ┌─────────┐
-         │  E2E    │  ← 3 critical flows
+         │  UI     │  ← 3 critical flows (XCUITest)
          │ Tests   │
         ┌┴─────────┴┐
-        │Integration │  ← API routes + Supabase + Razorpay
+        │Integration │  ← Supabase SDK + Edge Functions
         │  Tests     │
        ┌┴────────────┴┐
-       │  Unit Tests   │  ← Utility functions, validation, components
+       │  Unit Tests   │  ← ViewModels, Validators, Logic (XCTest)
        └───────────────┘
 ```
 
 ---
 
-## 2. Unit Tests
+## 2. Unit Tests (XCTest)
 
 ### What to Test
 | Module | Test Cases |
 |---|---|
-| Amount Validation | Min ₹1, Max ₹100000, reject negative, reject zero, reject non-numeric |
-| Donor Form Validation | Required name, valid email format, optional phone, phone format |
-| Currency Formatting | ₹500 → "₹500.00", handle decimals, handle large amounts |
-| Razorpay Signature | Valid signature passes, invalid signature fails, empty signature fails |
-| Status Mapping | Map Razorpay events to donation statuses correctly |
-| Date Formatting | ISO to readable format, timezone handling |
+| Amount Validation | Min ₹1, Max ₹100000, reject negative, reject zero |
+| Donor Form Validation | Required name, valid email format, phone format |
+| Currency Formatting | ₹500 → "₹500.00", handle decimals, large amounts |
+| Edge Function Validation | Validate JSON encoding/decoding of requests/responses |
+| ViewModel State | Verify state transitions (idle → loading → success/error) |
+| Date Formatting | ISO8601 string to localized Swift Date format |
 
 ### Tools
-- **Framework**: Jest
-- **Component Testing**: React Testing Library
-- **Command**: `npm run test`
+- **Framework**: XCTest
+- **Execution**: Run via Xcode (Cmd+U) or `xcodebuild test`
+
+### Example Test (Swift)
+```swift
+func testAmountValidation() {
+    let validator = DonationValidator()
+    XCTAssertTrue(validator.isValidAmount(500))
+    XCTAssertFalse(validator.isValidAmount(0))
+    XCTAssertFalse(validator.isValidAmount(-50))
+    XCTAssertFalse(validator.isValidAmount(100001))
+}
+```
 
 ---
 
 ## 3. Integration Tests
 
-### API Route Tests
-| Endpoint | Test Cases |
+### What to Test
+| Module | Test Cases |
 |---|---|
-| `POST /api/create-order` | Valid amount → returns order_id; Invalid amount → 400; Missing amount → 400 |
-| `POST /api/verify-payment` | Valid signature → 200 + donation saved; Invalid signature → 400; Missing fields → 400 |
-| `POST /api/webhook/razorpay` | Valid webhook → 200 + status updated; Invalid signature → 401; Duplicate event → 200 (idempotent) |
-| `GET /api/admin/donations` | Authenticated → returns donations; Unauthenticated → 401; With filters → filtered results |
+| Supabase Connect | Initialize SDK, test anonymous query to `causes` |
+| Create Order | Call `create-order` Edge Function, verify order_id returned |
+| Verify Payment | Call `verify-payment` Edge Function with invalid signature (expect failure) |
+| Webhook | Send mock payload to webhook URL, verify DB update |
 
-### Supabase Integration Tests
-| Operation | Test Cases |
+### Notes
+- Integration tests that modify the database should run against a **Supabase local development environment** or a dedicated staging project, NOT production.
+
+---
+
+## 4. UI Tests (XCUITest)
+
+### What to Test
+| Flow | Test Cases |
 |---|---|
-| Insert Donation | Valid data → row created; Missing required field → error |
-| Read Donations | Admin → returns all; Anon → returns nothing (RLS) |
-| Update Status | Valid transition → updated; Invalid ID → no rows affected |
-| Read Causes | Anon → returns active causes only; Inactive causes hidden |
+| Donation Flow | Launch app → Select ₹500 → Fill Form → Tap Donate → Verify Razorpay opens |
+| Admin Flow | Tab Admin → Enter credentials → Verify Dashboard loads → Tap Donor Log → Verify List |
+| Form Errors | Tap Donate with empty form → Verify Validation Alerts appear |
 
 ### Tools
-- **Framework**: Jest + Supertest (for API routes)
-- **Database**: Supabase test project (separate from production)
-- **Command**: `npm run test:integration`
+- **Framework**: XCUITest
+- **Execution**: Xcode Simulator (iPhone 15 Pro, iPad Pro)
 
 ---
 
-## 4. End-to-End (E2E) Tests
+## 5. Manual Testing (Checklist)
 
-### Critical Flow 1: Successful Donation
-```
-1. Navigate to / (Donation Page)
-2. Verify cause title and description are displayed
-3. Select ₹500 predefined amount
-4. Fill donor name: "Test Donor"
-5. Fill donor email: "test@example.com"
-6. Click "Donate Now"
-7. Razorpay checkout opens
-8. Complete payment with test card: 4111 1111 1111 1111
-9. Verify redirect to /thank-you
-10. Verify thank-you page shows "₹500" and donation reference
-```
+Since automated tests cannot easily complete a Razorpay payment flow due to the third-party native sheet, manual testing is required for the final mile.
 
-### Critical Flow 2: Admin Views Donation
-```
-1. Navigate to /admin/login
-2. Enter admin credentials
-3. Verify redirect to /admin dashboard
-4. Verify total donations count updated
-5. Navigate to /admin/donors
-6. Verify "Test Donor" appears in donor log
-7. Verify amount shows ₹500
-8. Verify date is today
-```
+### Razorpay Test Mode Verification
+1. Open app in Simulator.
+2. Fill form and tap Donate.
+3. In Razorpay Sheet, select Card.
+4. Use test card: `4111 1111 1111 1111`, expiry `12/25`, CVV `123`.
+5. Enter any OTP.
+6. Verify app navigates to `ThankYouView`.
+7. Verify donation record exists in Supabase Dashboard.
 
-### Critical Flow 3: Failed Payment
-```
-1. Navigate to / (Donation Page)
-2. Select ₹500 amount
-3. Fill donor info
-4. Click "Donate Now"
-5. Razorpay checkout opens
-6. Cancel/close checkout
-7. Verify user stays on donation page
-8. Verify error message displayed
-9. Verify no donation record created with 'completed' status
-```
+### Network Testing (Network Link Conditioner)
+1. Turn on 100% Loss.
+2. Attempt to donate.
+3. Verify "No connection" alert appears. App must not crash.
+
+---
+
+## 6. Performance Testing
 
 ### Tools
-- **Framework**: Playwright or Cypress
-- **Command**: `npm run test:e2e`
+- **Xcode Instruments**: Time Profiler, Allocations.
+
+### Targets
+- **App Launch**: < 2 seconds.
+- **Memory**: < 150 MB during donation flow.
+- **Scroll**: 60 FPS on DonorLogView.
 
 ---
 
-## 5. Razorpay Test Mode Testing
+## 7. QA Gates Before Launch
 
-### Test Credentials
-| Type | Value | Result |
-|---|---|---|
-| Test Card (Success) | 4111 1111 1111 1111 | Payment succeeds |
-| Test Card (Failure) | Use Razorpay test dashboard to simulate | Payment fails |
-| Test UPI (Success) | success@razorpay | Payment succeeds |
-| Test UPI (Failure) | failure@razorpay | Payment fails |
-| Test Netbanking | Any test bank | Payment succeeds |
-
-### Webhook Testing
-- Use Razorpay Dashboard → Webhooks → "Test Webhook" button
-- Or use `ngrok` to expose local server for webhook testing
-- Verify signature validation works correctly
-- Verify idempotent handling (same event sent twice)
-
----
-
-## 6. Security Tests
-
-| Test | Method | Expected Result |
-|---|---|---|
-| Access `/api/admin/donations` without auth | Manual / Integration | 401 Unauthorized |
-| Access `/admin` without auth | E2E | Redirect to /admin/login |
-| Send webhook with invalid signature | Integration | 401 Rejected |
-| SQL injection in donor name | Integration | Sanitized, no SQL execution |
-| XSS in donor name field | E2E | HTML escaped, no script execution |
-| Access donations table as `anon` role | Supabase RLS test | Empty result (blocked) |
-
----
-
-## 7. Performance Tests
-
-| Metric | Target | Test Method |
-|---|---|---|
-| Donation page load | < 3 seconds | Lighthouse CI |
-| API response (create-order) | < 500ms | Jest + timing |
-| API response (verify-payment) | < 500ms | Jest + timing |
-| Admin dashboard load | < 3 seconds | Lighthouse CI |
-| Donor table (100 records) | < 2 seconds | Manual + timing |
-
----
-
-## 8. Test Coverage Targets
-
-| Layer | Minimum Coverage |
-|---|---|
-| Unit Tests | 80% |
-| API Routes | 100% (all endpoints) |
-| E2E Critical Paths | 100% (3 flows above) |
-| Security Tests | 100% (all items above) |
-
----
-
-## 9. KPI Verification Matrix
-
-> Cross-reference with [KPI.mdc](../KPI.mdc)
-
-| KPI | Test Type | How to Verify |
-|---|---|---|
-| Payment flow works in test mode | E2E Test (Flow 1) | Complete donation with test card |
-| Thank-you page displayed after donation | E2E Test (Flow 1, Step 9-10) | Verify redirect + content |
-| Admin can view donor log | E2E Test (Flow 2) | Login + verify donor table |
-
----
-
-## 10. Test Environment Setup
-
-```
-# Install test dependencies
-npm install --save-dev jest @testing-library/react @testing-library/jest-dom playwright
-
-# Create test Supabase project (separate from dev)
-# Configure test environment variables in .env.test
-
-# Run all tests
-npm run test           # Unit tests
-npm run test:integration  # Integration tests
-npm run test:e2e       # E2E tests
-npm run test:all       # All tests
-```
+- [ ] All XCTests pass.
+- [ ] All XCUITests pass on iPhone and iPad simulators.
+- [ ] Manual test of Razorpay happy path successful.
+- [ ] Manual test of Razorpay cancelled path successful.
+- [ ] Memory profile shows no leaks.
+- [ ] App builds with zero warnings in Xcode.

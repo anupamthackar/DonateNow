@@ -1,153 +1,123 @@
-# Error Handling & State Machine — DonateNow
+# Error Handling Policy — DonateNow
 
-> Reference: [PRD.mdc](../PRD.mdc) | [architecture.mdc](./architecture.mdc) | [ERD.mdc](./ERD.mdc) | [testing.mdc](./testing.mdc)
+> Reference: [architecture.mdc](./architecture.mdc) | [KPI.mdc](../KPI.mdc)
 
 ---
 
-## 1. Donation State Machine
+## 1. Global Error Strategy
 
+DonateNow follows a resilient error handling strategy native to Swift and iOS:
+1. **Never crash**: Network or SDK failures must never crash the app.
+2. **Graceful degradation**: Show friendly Alerts or empty states.
+3. **Actionable feedback**: Tell the user exactly what went wrong and how to fix it.
+4. **Strong typing**: Use Swift `Error` enums for specific failure cases.
+
+---
+
+## 2. Swift Error Enums
+
+All errors must be strongly typed using Swift enums conforming to `LocalizedError`.
+
+### AppError
+```swift
+enum AppError: LocalizedError {
+    case networkError
+    case serverError(String)
+    case validationError(String)
+    case paymentFailed
+    case paymentCancelled
+    case unauthorized
+    case unknown
+    
+    var errorDescription: String? {
+        switch self {
+        case .networkError:
+            return "Please check your internet connection and try again."
+        case .serverError(let message):
+            return message
+        case .validationError(let message):
+            return message
+        case .paymentFailed:
+            return "Payment could not be processed. No amount was deducted."
+        case .paymentCancelled:
+            return "Payment was cancelled."
+        case .unauthorized:
+            return "Your session has expired. Please log in again."
+        case .unknown:
+            return "An unexpected error occurred. Please try again."
+        }
+    }
+}
 ```
-                    ┌──────────┐
-                    │ INITIATED│ ← Order created via /api/create-order
-                    └────┬─────┘
-                         │
-                    User opens Razorpay Checkout
-                         │
-              ┌──────────┴──────────┐
-              │                     │
-         User Pays            User Cancels
-              │                     │
-              ▼                     ▼
-        ┌──────────┐         ┌──────────┐
-        │ PENDING  │         │ CANCELLED│ (terminal)
-        └────┬─────┘         └──────────┘
-             │
-     Webhook received
-             │
-    ┌────────┴────────┐
-    │                 │
- payment.captured  payment.failed
-    │                 │
-    ▼                 ▼
-┌───────────┐   ┌──────────┐
-│ COMPLETED │   │  FAILED  │ (terminal)
-└─────┬─────┘   └──────────┘
-      │
-  Manual action (Razorpay Dashboard)
-      │
-      ▼
-┌───────────┐
-│ REFUNDED  │ (terminal)
-└───────────┘
+
+---
+
+## 3. UI Error Presentation (SwiftUI)
+
+### 3.1 Field-Level Validation (Forms)
+- Show error text in red below the specific `TextField`.
+- Do not use alerts for basic form validation (e.g., "Invalid email").
+
+### 3.2 Action-Level Errors (Network/Payment)
+- Show an iOS standard `Alert` (`.alert(isPresented:error:...)`).
+- Dim the background, stop the `ProgressView`.
+- Example: "Network Error: Please check your connection."
+
+### 3.3 Page-Level Errors (Data Loading)
+- Show a dedicated `ErrorStateView` with a retry button.
+- Used when the main `DonationView` fails to fetch the cause, or `DonorLogView` fails to fetch data.
+
+---
+
+## 4. State Machine (Donation Flow)
+
+The `DonationViewModel` manages state using a strongly typed enum:
+
+```swift
+enum DonationState {
+    case idle              // Waiting for user input
+    case loadingCause      // Fetching cause from Supabase
+    case creatingOrder     // Edge Function: create-order
+    case waitingForPayment // Razorpay SDK presented
+    case verifying         // Edge Function: verify-payment
+    case success           // Payment confirmed
+    case error(AppError)   // Any failure
+}
 ```
 
+**State Transitions:**
+- `idle` → User taps Donate → `creatingOrder`
+- `creatingOrder` → Success → `waitingForPayment`
+- `creatingOrder` → Failure → `error(.serverError)`
+- `waitingForPayment` → Success → `verifying`
+- `waitingForPayment` → Cancelled → `idle`
+- `waitingForPayment` → Failed → `error(.paymentFailed)`
+- `verifying` → Success → `success`
+- `verifying` → Failure → `error(.serverError)`
+
 ---
 
-## 2. State Transition Rules
+## 5. Razorpay Edge Cases
 
-| From | To | Trigger | Action |
+| Scenario | SDK Behavior | UI Response | Recovery |
 |---|---|---|---|
-| — | `initiated` | `/api/create-order` succeeds | Create donation record |
-| `initiated` | `pending` | `/api/verify-payment` succeeds | Update status, store payment IDs |
-| `initiated` | `cancelled` | User closes Razorpay Checkout | No DB update (client-side only) |
-| `pending` | `completed` | Webhook: `payment.captured` | Update status, update `raised_amount` on cause |
-| `pending` | `failed` | Webhook: `payment.failed` | Update status |
-| `completed` | `refunded` | Manual refund via Razorpay Dashboard | Update status (webhook or manual) |
-
-### Invalid Transitions (Must Reject)
-- `completed` → `initiated` ❌
-- `failed` → `completed` ❌
-- `refunded` → `completed` ❌
-- `cancelled` → `pending` ❌
+| User dismisses sheet | `onPaymentError` (Code: Cancellation) | Return to `idle` state | User can tap Donate again |
+| Payment declined | `onPaymentError` (Code: Failed) | Alert: Payment Failed | User can retry with different card |
+| Network drops | `onPaymentError` (Code: Network) | Alert: Network Error | User can retry |
 
 ---
 
-## 3. Error Scenarios & Handling
+## 6. Admin Edge Cases
 
-### 3.1 Client-Side Errors
-
-| Error | Cause | User Sees | Action |
+| Scenario | Supabase Behavior | UI Response | Recovery |
 |---|---|---|---|
-| Form validation failed | Empty name, invalid email | Inline error messages | Prevent form submission |
-| Amount out of range | < ₹1 or > ₹100,000 | "Please enter amount between ₹1 and ₹1,00,000" | Prevent submission |
-| Razorpay Checkout failed to load | Script blocked, network error | "Payment service unavailable. Please try again." | Retry button |
-| User cancelled Razorpay Checkout | User clicked X or back | Return to donation form, no error shown | No action needed |
-| Network error during verify-payment | Internet dropped after payment | "Payment is being verified. Please don't close this page." | Auto-retry 3 times, then show support contact |
-
-### 3.2 Server-Side Errors
-
-| Error | Cause | HTTP Code | Response | Recovery |
-|---|---|---|---|---|
-| Invalid amount | Negative or zero amount | 400 | `{ error: "Invalid donation amount" }` | Client shows validation error |
-| Razorpay order creation failed | Razorpay API down | 502 | `{ error: "Payment service unavailable" }` | Client shows retry message |
-| Invalid payment signature | Tampered data or wrong keys | 400 | `{ error: "Payment verification failed" }` | Log alert, don't save donation |
-| Invalid webhook signature | Not from Razorpay | 401 | Empty 401 response | Log + ignore |
-| Database insert failed | Supabase down | 500 | `{ error: "Unable to process donation" }` | Log error, manual reconciliation |
-| Duplicate order ID | Re-submission | 409 | `{ error: "Donation already processed" }` | Return existing donation |
-| Admin unauthorized | Invalid/expired session | 401 | `{ error: "Unauthorized" }` | Redirect to login |
-
-### 3.3 Webhook Errors
-
-| Error | Cause | Action |
-|---|---|---|
-| Webhook signature invalid | Tampered or wrong secret | Return 401, log alert |
-| Donation not found for order_id | Race condition, DB delay | Return 200 (Razorpay will retry), log warning |
-| Duplicate webhook event | Razorpay retry | Idempotent handling — check if already processed, return 200 |
-| Database update failed | Supabase down | Return 500 (Razorpay will retry), log critical |
+| Session expired | API returns 401 | Alert: Session Expired, clear Keychain | Redirect to `AdminLoginView` |
+| Invalid password | API returns 400 | Inline error: Invalid credentials | User can retype |
+| No donors found | API returns empty array | Show `EmptyStateView` | N/A |
 
 ---
 
-## 4. Retry Strategy
+## 7. Retry Policies
 
-| Operation | Max Retries | Backoff | Timeout |
-|---|---|---|---|
-| Create Razorpay Order | 2 | 1s, 2s | 10s |
-| Verify Payment (client → server) | 3 | 1s, 2s, 4s | 15s |
-| Supabase Insert | 2 | 500ms, 1s | 5s |
-| Webhook Processing | Handled by Razorpay | Razorpay retries for 24h | — |
-
----
-
-## 5. User-Facing Error Messages
-
-### Tone: Reassuring, clear, actionable
-
-| Scenario | Message |
-|---|---|
-| Payment failed | "Your payment could not be processed. No amount has been deducted. Please try again." |
-| Network error during payment | "We're verifying your payment. Please don't close this page. If the issue persists, contact us." |
-| Service unavailable | "Our payment service is temporarily unavailable. Please try again in a few minutes." |
-| Invalid amount | "Please enter a valid donation amount between ₹1 and ₹1,00,000." |
-| Session expired (admin) | "Your session has expired. Please log in again." |
-| Generic server error | "Something went wrong. Please try again. If the problem continues, contact support." |
-
----
-
-## 6. Error Logging
-
-### What to Log
-| Event | Log Level | Data to Capture |
-|---|---|---|
-| Order creation failed | ERROR | amount, Razorpay error response |
-| Payment verification failed | ERROR | order_id, payment_id, signature mismatch details |
-| Webhook signature invalid | WARN | IP address, headers, payload hash |
-| Database operation failed | ERROR | operation, table, error message |
-| Successful donation | INFO | donation_id, amount, status |
-| Admin login | INFO | admin email, timestamp |
-| Admin login failed | WARN | attempted email, IP address |
-
-### Where to Log
-- Development: `console.log` / `console.error`
-- Production: Vercel Logs (built-in) or external service (future)
-
----
-
-## 7. Graceful Degradation
-
-| Component Failed | Fallback Behavior |
-|---|---|
-| Supabase down (read) | Show cached cause data or static fallback |
-| Supabase down (write) | Queue donation in memory, retry, show "processing" message |
-| Razorpay API down | Disable "Donate Now" button, show "temporarily unavailable" |
-| Razorpay Checkout JS failed to load | Show manual bank transfer instructions as fallback |
-| Admin API failed | Show "Unable to load data" with retry button |
+- **Client-Side (iOS)**: Do not auto-retry payment creation or verification (prevents duplicate charges). Require manual user action (Retry button).
+- **Server-Side (Razorpay Webhook)**: Razorpay will auto-retry delivering webhooks if the Supabase Edge Function fails or times out.
