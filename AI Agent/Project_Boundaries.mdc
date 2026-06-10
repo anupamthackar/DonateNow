@@ -1,0 +1,164 @@
+# Project Boundaries — DonateNow
+
+> Phase: 06 — Development Rules
+> Previous: [Project_Scope.mdc](./Project_Scope.mdc) | [Personas](./persona/) | [PRD.mdc](./PRD.mdc)
+> Next: [Detailed_Project_Scope.mdc](./Detailed_Project_Scope.mdc)
+> Related: [Save_Token.mdc](./Save_Token.mdc)
+
+---
+
+## 1. Development Rules (Strict)
+
+1. **Do not commit code without approval.**
+   - All code changes must be reviewed before commit.
+   - No auto-commits, no force pushes.
+
+2. **Do not execute commands without approval.**
+   - All terminal commands must be presented for approval.
+   - Especially: `npm install`, `npx`, database migrations, deployments.
+
+3. **Do not generate implementation code until requirements are fully clarified.**
+   - Read PRD → KPI → Personas → Architecture → ERD before writing code.
+   - Never assume a requirement — ask if ambiguous.
+
+4. **Ask questions whenever requirements are ambiguous.**
+   - Ambiguity is a blocker, not a decision point.
+   - Document questions in the relevant context file.
+
+5. **Build only maintainable and modular solutions.**
+   - One component per file.
+   - Utility functions in `/lib/`.
+   - No god files, no spaghetti code.
+
+6. **Avoid assumptions.**
+   - Don't assume API response format — verify with PRD.
+   - Don't assume database schema — verify with ERD.
+   - Don't assume UI behavior — verify with Features.
+
+7. **Obtain approval before major architectural changes.**
+   - Changes to: tech stack, database schema, API contracts, folder structure.
+   - Update affected context files after approval.
+
+---
+
+## 2. Coding Standards
+
+1. **Follow the Personas strictly.**
+   - Frontend: [frontend_persona.mdc](./persona/frontend_persona.mdc)
+   - Backend: [backend_persona.mdc](./persona/backend_persona.mdc)
+   - Database: [database_persona.mdc](./persona/database_persona.mdc)
+
+2. **Follow the Architecture strictly.**
+   - Component structure: [architecture.mdc](./extended/architecture.mdc) → Section 6
+   - API contracts: [PRD.mdc](./PRD.mdc) → Section 4
+   - Database schema: [ERD.mdc](./extended/ERD.mdc)
+
+3. **Follow the Style Guide.**
+   - Colors, typography, spacing: [style-guide.mdc](./extended/style-guide.mdc)
+   - No ad-hoc colors or font sizes.
+   - Use CSS variables defined in style guide.
+
+4. **Follow Error Handling patterns.**
+   - State machine: [error_handling.mdc](./extended/error_handling.mdc)
+   - Error messages: User-friendly, never expose stack traces.
+
+5. **Follow Security rules.**
+   - RLS policies: [security.mdc](./extended/security.mdc) → Section 4
+   - Key management: Never expose server-only secrets.
+
+---
+
+## 3. AI Agent Decision Order
+
+When making implementation decisions, follow this priority:
+
+```
+1. Project_Boundaries.mdc    ← What NOT to do (highest priority)
+2. Security.mdc              ← Security rules override convenience
+3. PRD.mdc                   ← Business requirements are source of truth
+4. KPI.mdc                   ← Success criteria validate PRD
+5. Architecture.mdc          ← System design follows PRD
+6. ERD.mdc                   ← Data model follows architecture
+7. Personas                  ← Tech decisions follow PRD + architecture
+8. Features.mdc              ← User stories implement PRD
+9. Style-guide.mdc           ← UI follows personas + architecture
+10. Error_handling.mdc       ← Error states follow architecture
+```
+
+> Defined in [context_map.mdc](./extended/context_map.mdc) → Section 4
+
+**Never skip levels. Never contradict a higher-priority document.**
+
+---
+
+## 4. File Modification Rules
+
+1. **Never modify context files without approval.**
+   - PRD, KPI, Personas, Scope, Boundaries — read-only during development.
+   - Changes require explicit user request.
+
+2. **Do not update unrelated files.**
+   - If fixing a bug in `/api/create-order`, don't touch `/components/DonorTable.js`.
+   - Scope changes to the requested file(s) only.
+
+3. **Do not create files outside the defined architecture.**
+   - Folder structure defined in [architecture.mdc](./extended/architecture.mdc) → Section 6.
+   - New files must fit the existing structure.
+
+---
+
+## 5. Communication Rules
+
+1. **Explain before implementing.**
+   - State what you plan to do before writing code.
+   - Cite which context file drives the decision.
+
+2. **Report blockers immediately.**
+   - Missing information, ambiguous requirements, dependency conflicts.
+
+3. **Confirm completion of each feature.**
+   - Reference the KPI(s) it satisfies.
+   - State what verification was done.
+
+---
+
+## 6. Quality Gates
+
+### Before Any Code is Written
+- [ ] PRD reviewed and understood
+- [ ] KPIs identified for the feature
+- [ ] Persona rules reviewed
+- [ ] Architecture section reviewed
+- [ ] ERD reviewed (if data-related)
+- [ ] Security rules reviewed (if API/auth-related)
+
+### Before Feature is Complete
+- [ ] Code follows persona standards
+- [ ] Error states handled
+- [ ] Loading states implemented
+- [ ] Mobile responsive verified
+- [ ] Associated KPIs can be verified
+
+### Before Deployment
+- [ ] All MVP KPIs pass
+- [ ] All security KPIs pass
+- [ ] Build succeeds (`npm run build`)
+- [ ] No console errors in browser
+- [ ] Environment variables documented
+
+---
+
+## 7. Prohibited Actions
+
+| # | Action | Reason |
+|---|---|---|
+| 1 | Store payment card/UPI data | PCI violation, never needed |
+| 2 | Expose service_role key to client | Security breach |
+| 3 | Skip webhook signature verification | Payment fraud risk |
+| 4 | Disable RLS for convenience | Data exposure |
+| 5 | Use inline styles | Violates frontend persona |
+| 6 | Hardcode API keys in source code | Security violation |
+| 7 | Use `any` type without justification | Type safety |
+| 8 | Create endpoints not in PRD | Scope creep |
+| 9 | Modify donation amount after creation | Data integrity violation |
+| 10 | Skip error handling in API routes | Unreliable system |

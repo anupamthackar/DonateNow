@@ -1,0 +1,178 @@
+# Security & Authentication — DonateNow
+
+> Reference: [PRD.mdc](../PRD.mdc) | [architecture.mdc](./architecture.mdc) | [ERD.mdc](./ERD.mdc)
+
+---
+
+## 1. Authentication Strategy
+
+### Public Pages (No Auth Required)
+- Donation Page (`/`)
+- Thank-You Page (`/thank-you`)
+
+### Admin Panel (Auth Required)
+- Admin Dashboard (`/admin`)
+- Donor Log (`/admin/donors`)
+
+### Auth Implementation
+- Provider: **Supabase Auth**
+- Method: Email + Password (Admin only)
+- Session: JWT-based, stored in HTTP-only cookie
+- Session Expiry: 24 hours
+- Refresh Token: Enabled via Supabase
+
+### Admin Access Control
+- Role: `admin`
+- Default Admin: Seeded during setup
+- No public registration for admin
+- Admin accounts created manually via Supabase dashboard or seed script
+
+---
+
+## 2. API Security
+
+### Razorpay Integration
+- API Keys stored in environment variables (`.env.local`)
+- **Never expose `key_secret` to client-side**
+- `key_id` is public-safe (used in frontend checkout)
+- `key_secret` used only in server-side API routes
+
+### Webhook Security
+- Razorpay webhook signature verification is **mandatory**
+- Use `razorpay.webhooks.verify()` with `webhook_secret`
+- Reject all requests with invalid signatures
+- Webhook endpoint: `/api/webhook/razorpay`
+- Allowed IPs: Razorpay IP whitelist (production only)
+
+### API Route Protection
+```
+Public Routes (No Auth):
+  POST /api/create-order        → Create Razorpay order
+  POST /api/verify-payment      → Verify payment signature
+  POST /api/webhook/razorpay    → Razorpay webhook handler
+
+Protected Routes (Admin Auth Required):
+  GET  /api/admin/donations     → Fetch donor log
+  GET  /api/admin/stats         → Fetch dashboard stats
+```
+
+### Rate Limiting
+- `/api/create-order`: 10 requests/minute per IP
+- `/api/webhook/razorpay`: No rate limit (Razorpay server)
+- `/api/admin/*`: 60 requests/minute per session
+
+---
+
+## 3. Data Protection
+
+### Donor Data Classification
+| Data Field | Sensitivity | Storage | Encryption |
+|---|---|---|---|
+| Donor Name | Medium | Supabase | At rest (Supabase default) |
+| Donor Email | Medium | Supabase | At rest (Supabase default) |
+| Donor Phone | Medium | Supabase | At rest (Supabase default) |
+| Donation Amount | Low | Supabase | At rest (Supabase default) |
+| Razorpay Payment ID | Medium | Supabase | At rest (Supabase default) |
+| Razorpay Order ID | Low | Supabase | At rest (Supabase default) |
+| Card/UPI Details | Critical | **Never stored** | Handled by Razorpay |
+
+### Key Rules
+1. **Never store card numbers, CVV, or UPI PINs** — Razorpay handles all payment data
+2. Store only Razorpay reference IDs (payment_id, order_id, signature)
+3. Supabase Row Level Security (RLS) enabled on all tables
+4. Admin-only read access on `donations` table
+5. No public read/write on any table
+
+---
+
+## 4. Supabase Row Level Security (RLS)
+
+### `donations` Table
+```sql
+-- Enable RLS
+ALTER TABLE donations ENABLE ROW LEVEL SECURITY;
+
+-- Allow insert from service role only (webhook/API route)
+CREATE POLICY "Service role can insert donations"
+  ON donations FOR INSERT
+  TO service_role
+  WITH CHECK (true);
+
+-- Allow read for authenticated admin users only
+CREATE POLICY "Admin can read donations"
+  ON donations FOR SELECT
+  TO authenticated
+  USING (auth.jwt() ->> 'role' = 'admin');
+
+-- No public access
+-- No update or delete allowed
+```
+
+### `causes` Table
+```sql
+-- Public can read causes (for donation page)
+CREATE POLICY "Public can read causes"
+  ON causes FOR SELECT
+  TO anon
+  USING (is_active = true);
+
+-- Only admin can modify causes
+CREATE POLICY "Admin can manage causes"
+  ON causes FOR ALL
+  TO authenticated
+  USING (auth.jwt() ->> 'role' = 'admin');
+```
+
+---
+
+## 5. Environment Variables Security
+
+### Storage Rules
+1. All secrets in `.env.local` (never committed to git)
+2. `.env.local` added to `.gitignore`
+3. Production secrets in Vercel Environment Variables (encrypted)
+4. Separate keys for test mode and production mode
+
+### Required Secrets
+```
+NEXT_PUBLIC_RAZORPAY_KEY_ID     → Public (safe for client)
+RAZORPAY_KEY_SECRET             → Server-only (never expose)
+RAZORPAY_WEBHOOK_SECRET         → Server-only (webhook verification)
+NEXT_PUBLIC_SUPABASE_URL        → Public (safe for client)
+NEXT_PUBLIC_SUPABASE_ANON_KEY   → Public (safe with RLS)
+SUPABASE_SERVICE_ROLE_KEY       → Server-only (bypasses RLS)
+```
+
+### Naming Convention
+- `NEXT_PUBLIC_*` → Safe for client-side exposure
+- No prefix → Server-side only, never bundled to client
+
+---
+
+## 6. Security Checklist
+
+- [ ] Razorpay `key_secret` never in client-side code
+- [ ] Webhook signature verified on every webhook call
+- [ ] Supabase RLS enabled on all tables
+- [ ] Admin routes protected by Supabase Auth
+- [ ] `.env.local` in `.gitignore`
+- [ ] No donor PII exposed in client-side logs
+- [ ] HTTPS enforced in production
+- [ ] CORS restricted to own domain in production
+- [ ] CSP headers configured
+- [ ] No sensitive data in URL parameters
+
+---
+
+## 7. Compliance Notes
+
+### For Test Mode
+- Use Razorpay Test Keys only
+- Test card: `4111 1111 1111 1111`
+- Test UPI: `success@razorpay`
+- No real money processed
+
+### For Production (Future)
+- PCI-DSS compliance handled by Razorpay (SAQ-A eligible)
+- GDPR considerations for donor data (if international donors)
+- Data retention policy: Define with NGO stakeholders

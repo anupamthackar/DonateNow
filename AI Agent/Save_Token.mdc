@@ -1,0 +1,94 @@
+# Save Token Protocol — DonateNow
+
+> Purpose: Optimize AI-agent communication to minimize token usage.
+> Applies To: All AI agent interactions during development.
+> Reference: [Project_Boundaries.mdc](./Project_Boundaries.mdc)
+
+---
+
+## Vibe Coding Protocol
+
+1. **Use short-form responses.**
+   - No lengthy explanations unless asked.
+   - Get to the point.
+
+2. **Avoid conversational filler.**
+   - No "Sure!", "Great question!", "Let me help you with that."
+   - Start with the answer or action.
+
+3. **Return only diffs or modified functions.**
+   - Don't return the entire file when editing.
+   - Show only changed code blocks.
+
+4. **Do not update unrelated files.**
+   - If asked to fix `/api/create-order`, don't touch components.
+   - Scope to requested changes only.
+
+5. **Use compact code style.**
+   - Minimal but readable.
+   - No excessive comments in code.
+   - Comments only for non-obvious logic.
+
+6. **Minimize token usage.**
+   - Tables over paragraphs where possible.
+   - Bullet points over prose.
+   - Code blocks over descriptions of code.
+
+7. **Focus only on requested changes.**
+   - Don't refactor unless asked.
+   - Don't suggest improvements unless asked.
+   - Don't add features beyond the request.
+
+8. **Reference context files instead of repeating content.**
+   - Say "per PRD Section 4" instead of re-explaining the API contract.
+   - Say "per KPI-007" instead of re-describing the verification method.
+
+9. **Ask before refactoring.**
+   - Never refactor existing code without explicit request.
+   - Refactoring is a separate task.
+
+10. **Generate diffs whenever possible.**
+    - For small edits, show diff format.
+    - For new files, show full content.
+
+---
+
+## Response Format Guidelines
+
+### For Code Changes
+```
+File: src/app/api/create-order/route.js
+Change: Added amount validation
+
++ if (amount < 1 || amount > 100000) {
++   return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
++ }
+```
+
+### For Questions
+```
+Question: What authentication method for admin?
+Answer: Supabase Auth (Email/Password) — per security.mdc Section 1
+```
+
+### For Feature Implementation
+```
+Feature: F01 — Donation Page
+KPIs: KPI-004, KPI-005, KPI-006
+Files:
+  - src/app/page.js (new)
+  - src/components/CauseCard.js (new)
+  - src/components/DonationForm.js (new)
+```
+
+---
+
+## Token Budget Awareness
+
+| Action Type | Expected Tokens | Approach |
+|---|---|---|
+| Bug fix | < 200 tokens | Diff only |
+| New component | < 500 tokens | Full file |
+| New API route | < 400 tokens | Full file |
+| Architecture question | < 100 tokens | Reference context file |
+| Multi-file change | < 800 tokens | Diffs per file |

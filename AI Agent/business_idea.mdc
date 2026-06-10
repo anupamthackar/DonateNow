@@ -1,0 +1,146 @@
+# Business Idea — DonateNow
+
+> Phase: 01 — Foundation
+> Next: [PRD.mdc](./PRD.mdc)
+
+---
+
+## 1. Business Idea
+
+**DonateNow** — A simple, transparent digital donation platform for local NGOs.
+
+---
+
+## 2. Problem Identified
+
+A local NGO currently receives donations through **bank transfers** and struggles to:
+- Track donor information (who donated, how much, when)
+- Provide donors a seamless giving experience
+- Generate reports for transparency and compliance
+- Scale donation collection beyond manual processes
+
+### Current Process (As-Is)
+```
+Donor contacts NGO
+  → NGO shares bank account details manually
+    → Donor makes bank transfer
+      → NGO manually checks bank statement
+        → NGO manually records donor info in spreadsheet
+          → No thank-you or receipt sent automatically
+```
+
+### Pain Points
+| # | Pain Point | Impact |
+|---|---|---|
+| 1 | No centralized donor tracking | Donor data lost, no follow-up possible |
+| 2 | Manual bank statement reconciliation | Time-consuming, error-prone |
+| 3 | No instant confirmation to donor | Poor donor experience, trust issues |
+| 4 | No donation page | NGO cannot share a single link for donations |
+| 5 | No reporting capability | Cannot show transparency to stakeholders |
+
+---
+
+## 3. Proposed Solution
+
+Build a **simple donation platform** with:
+1. A **public donation page** displaying the cause and predefined amounts
+2. **Razorpay payment integration** for instant, secure payments
+3. A **thank-you page** after successful donation
+4. An **admin panel** for the NGO team to view donor details
+
+### Future Process (To-Be)
+```
+NGO shares donation link
+  → Donor visits donation page
+    → Donor selects amount + fills info
+      → Donor pays via Razorpay (card/UPI/netbanking)
+        → Thank-you page displayed instantly
+          → Donation auto-recorded in database
+            → Admin views donor log anytime
+```
+
+---
+
+## 4. Target Users
+
+| User Type | Description | Actions |
+|---|---|---|
+| **Donor** | General public, supporters, well-wishers | View cause, donate, receive confirmation |
+| **NGO Admin** | NGO team members managing donations | Login, view donor log, track totals |
+
+---
+
+## 5. Business Goals
+
+| # | Goal | Metric |
+|---|---|---|
+| 1 | Digitize donation collection | 100% donations via platform |
+| 2 | Eliminate manual tracking | Zero spreadsheet dependency |
+| 3 | Improve donor experience | Thank-you page within 3 seconds |
+| 4 | Enable donor transparency | Admin dashboard with real-time data |
+| 5 | Provide a shareable donation link | Single URL for all donation campaigns |
+
+---
+
+## 6. Core Features (High Level)
+
+| # | Feature | User | Priority |
+|---|---|---|---|
+| 1 | Public Donation Page | Donor | P0 — Must Have |
+| 2 | Razorpay Payment Integration | Donor | P0 — Must Have |
+| 3 | Thank-You Page | Donor | P0 — Must Have |
+| 4 | Admin Login | Admin | P0 — Must Have |
+| 5 | Admin Dashboard (Stats) | Admin | P1 — Important |
+| 6 | Donor Log Table | Admin | P0 — Must Have |
+
+---
+
+## 7. Suggested Tech Stack
+
+| Layer | Technology | Reason |
+|---|---|---|
+| Frontend + Backend | Next.js | Full-stack, SSR, API routes, fast |
+| Database + Auth | Supabase | PostgreSQL, built-in auth, RLS, free tier |
+| Payments | Razorpay (Test Mode) | India-focused, easy integration, test mode available |
+| Hosting | Vercel | Free, seamless Next.js deployment |
+
+---
+
+## 8. Demo Scenario
+
+```
+1. A user visits the donation page
+2. Selects ₹500 as donation amount
+3. Fills in name and email
+4. Clicks "Donate Now"
+5. Completes payment via Razorpay Checkout
+6. Thank-you page is displayed with donation details
+7. Admin logs into admin panel
+8. Admin sees the ₹500 donation in the donor log
+```
+
+---
+
+## 9. Success Criteria
+
+- [ ] Payment flow works successfully in test mode
+- [ ] Thank-you page is displayed after donation
+- [ ] Admin can view the donor log
+
+---
+
+## 10. Constraints
+
+- MVP scope only — no recurring donations, no receipt generation, no multi-cause support
+- Test mode only — no real money processed during development
+- Single admin role — no role hierarchy
+- No mobile app — web only
+
+---
+
+## 11. Next Steps
+
+This Business Idea feeds into:
+1. → [PRD.mdc](./PRD.mdc) — Detailed requirements
+2. → [KPI.mdc](./KPI.mdc) — Measurable success metrics
+3. → [Personas](./persona/) — Technical implementation decisions

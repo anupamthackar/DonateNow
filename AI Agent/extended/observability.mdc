@@ -1,0 +1,194 @@
+# Observability — DonateNow
+
+> Reference: [architecture.mdc](./architecture.mdc) | [error_handling.mdc](./error_handling.mdc) | [security.mdc](./security.mdc) | [deployment.mdc](./deployment.mdc)
+
+---
+
+## 1. Logging Strategy
+
+### Log Levels
+| Level | When to Use | Example |
+|---|---|---|
+| `ERROR` | Operation failed, needs attention | Payment verification failed, DB write failed |
+| `WARN` | Unexpected but recoverable | Invalid webhook signature, duplicate event |
+| `INFO` | Normal business events | Donation created, admin logged in, webhook processed |
+| `DEBUG` | Development troubleshooting | API request/response payloads, query timing |
+
+### What to Log
+
+#### Payment Events (CRITICAL)
+| Event | Level | Data to Capture |
+|---|---|---|
+| Order created | INFO | `{ order_id, amount, currency, timestamp }` |
+| Payment verified | INFO | `{ donation_id, payment_id, amount, status }` |
+| Payment verification failed | ERROR | `{ order_id, error_message, received_signature }` |
+| Webhook received | INFO | `{ event_type, payment_id, timestamp }` |
+| Webhook signature invalid | WARN | `{ ip_address, event_type, timestamp }` |
+| Webhook processed | INFO | `{ payment_id, new_status, timestamp }` |
+| Webhook processing failed | ERROR | `{ payment_id, error_message, stack_trace }` |
+
+#### Admin Events
+| Event | Level | Data to Capture |
+|---|---|---|
+| Admin login success | INFO | `{ admin_email, timestamp }` |
+| Admin login failed | WARN | `{ attempted_email, ip_address, timestamp }` |
+| Admin logout | INFO | `{ admin_email, timestamp }` |
+| Donor log accessed | INFO | `{ admin_email, filters_applied, timestamp }` |
+
+#### System Events
+| Event | Level | Data to Capture |
+|---|---|---|
+| API route error | ERROR | `{ route, method, error_message, stack_trace }` |
+| Database connection error | ERROR | `{ operation, table, error_message }` |
+| Page render error | ERROR | `{ page, error_message, user_agent }` |
+
+### What NOT to Log
+- ❌ Razorpay `key_secret` or `webhook_secret`
+- ❌ Supabase `service_role_key`
+- ❌ Full card numbers or UPI PINs (never available, but guard against)
+- ❌ Donor phone numbers in production logs
+- ❌ Raw webhook payloads (may contain sensitive data)
+
+---
+
+## 2. Log Implementation
+
+### Development (Local)
+```javascript
+// Use console methods with structured data
+console.info('[DONATION] Order created', { order_id, amount });
+console.error('[WEBHOOK] Signature verification failed', { ip, event_type });
+console.warn('[AUTH] Failed login attempt', { email, ip });
+```
+
+### Production (Vercel)
+- Vercel automatically captures `console.log` output
+- View logs: Vercel Dashboard → Project → Logs
+- Filter by: Function name, level, time range
+- Retention: 1 hour (Free), 3 days (Pro)
+
+### Structured Logging Format
+```javascript
+// Helper function for consistent logging
+function log(level, category, message, data = {}) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level,
+    category,
+    message,
+    ...data
+  };
+  
+  switch (level) {
+    case 'ERROR': console.error(JSON.stringify(entry)); break;
+    case 'WARN':  console.warn(JSON.stringify(entry)); break;
+    case 'INFO':  console.info(JSON.stringify(entry)); break;
+    case 'DEBUG': console.debug(JSON.stringify(entry)); break;
+  }
+}
+
+// Usage
+log('INFO', 'DONATION', 'Order created', { order_id: 'order_xxx', amount: 500 });
+log('ERROR', 'WEBHOOK', 'Signature invalid', { ip: '1.2.3.4' });
+```
+
+---
+
+## 3. Monitoring
+
+### Key Metrics to Track
+
+| Metric | Source | Alert Threshold |
+|---|---|---|
+| Total donations (daily) | Supabase query | N/A (informational) |
+| Failed payments (hourly) | Logs / Razorpay Dashboard | > 5 failures in 1 hour |
+| Webhook failure rate | Logs | > 3 consecutive failures |
+| API response time | Vercel Analytics | > 2 seconds average |
+| Error rate (5xx) | Vercel Logs | > 1% of requests |
+| Admin login failures | Logs | > 5 failures in 10 minutes |
+
+### Monitoring Tools (By Phase)
+
+| Phase | Tool | Cost |
+|---|---|---|
+| MVP / Test Mode | Vercel Logs + Razorpay Dashboard | Free |
+| Post-Launch | Vercel Analytics | Free (basic) |
+| Scale (Future) | Sentry (errors) + Vercel Analytics | Free tier available |
+
+---
+
+## 4. Health Checks
+
+### Application Health
+```
+GET /api/health → 200 OK
+
+Response:
+{
+  "status": "healthy",
+  "timestamp": "2026-06-10T00:00:00Z",
+  "services": {
+    "supabase": "connected",
+    "razorpay": "configured"
+  }
+}
+```
+
+### What to Check
+| Service | Check | Frequency |
+|---|---|---|
+| Supabase | Simple SELECT query | On health check |
+| Razorpay | Key configured (not API call) | On startup |
+| Next.js | Page renders without error | On health check |
+
+---
+
+## 5. Alerting (Future Enhancement)
+
+### Alert Channels
+- Email: Admin email for critical alerts
+- Slack: Webhook integration for team notifications (future)
+
+### Alert Rules
+| Condition | Severity | Action |
+|---|---|---|
+| Payment webhook fails 3 times | Critical | Email admin immediately |
+| Database connection lost | Critical | Email admin immediately |
+| 5+ failed login attempts | Warning | Log + review |
+| Daily donation summary | Info | Email admin (daily digest) |
+
+---
+
+## 6. Dashboard Metrics (Admin Panel)
+
+### Already Built (in Admin Dashboard — F05)
+- Total donations count
+- Total amount raised
+- Recent donations list
+
+### Future Additions
+- Donations per day chart (line graph)
+- Payment method distribution (pie chart)
+- Average donation amount
+- Donor retention (repeat donors)
+- Cause-wise breakdown
+
+---
+
+## 7. Razorpay Dashboard Monitoring
+
+### Available in Razorpay Dashboard (No Code Needed)
+- Payment success/failure rates
+- Payment method distribution
+- Settlement reports
+- Refund tracking
+- Webhook delivery status
+- API error logs
+
+### Recommended Checks
+| Check | Frequency |
+|---|---|
+| Payment success rate | Daily |
+| Webhook delivery status | Weekly |
+| Settlement reconciliation | Weekly |
+| API error logs | On issues |

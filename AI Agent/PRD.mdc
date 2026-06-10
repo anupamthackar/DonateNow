@@ -1,0 +1,344 @@
+# Product Requirements Document (PRD) — DonateNow
+
+> Phase: 02 — Requirements
+> Previous: [business_idea.mdc](./business_idea.mdc)
+> Next: [KPI.mdc](./KPI.mdc)
+> Extended: [architecture.mdc](./extended/architecture.mdc) | [ERD.mdc](./extended/ERD.mdc) | [security.mdc](./extended/security.mdc)
+
+---
+
+## 1. Problem Statement
+
+### Current Business Problem
+A local NGO receives donations through bank transfers and has no system to track donor information. The team manually reconciles bank statements and records donor data in spreadsheets.
+
+### Existing Pain Points
+- No centralized donation collection mechanism
+- No real-time tracking of donor names, amounts, or dates
+- No instant confirmation or acknowledgment to donors
+- Manual data entry leads to errors and lost records
+- No reporting or dashboard for the NGO team
+- Cannot share a single link for donation campaigns
+
+### Impact on Users and Stakeholders
+| Stakeholder | Impact |
+|---|---|
+| Donors | Poor giving experience, no confirmation, no trust |
+| NGO Team | Hours spent on manual reconciliation weekly |
+| NGO Management | No visibility into donation trends or totals |
+| Auditors | Incomplete records, compliance risks |
+
+---
+
+## 2. Solution Overview
+
+### Proposed Solution
+A web-based donation platform built with Next.js, Supabase, and Razorpay that enables:
+- Donors to give online with a single link
+- Instant payment processing via Razorpay
+- Automatic donor record creation in Supabase
+- Admin dashboard for the NGO team
+
+### Core Features
+| # | Feature | Description |
+|---|---|---|
+| F01 | Public Donation Page | Displays cause, predefined amounts, donor form |
+| F02 | Razorpay Payment Integration | Secure payment via card/UPI/netbanking |
+| F03 | Thank-You Page | Confirmation shown after successful donation |
+| F04 | Admin Authentication | Email/password login for NGO team |
+| F05 | Admin Dashboard | Total donations, total amount, recent activity |
+| F06 | Donor Log | Searchable table of all donations |
+
+### Expected Business Impact
+- 100% donations digitized
+- Zero manual reconciliation
+- Real-time donor visibility
+- Shareable donation link for campaigns
+
+---
+
+## 3. User Flow
+
+### 3.1 Happy Path — Donor Makes Donation
+```
+Donor visits /
+  → Views cause title, description, and progress
+  → Selects predefined amount (₹100/₹500/₹1000/₹2000) OR enters custom amount
+  → Fills donor info (name, email, phone[optional])
+  → Clicks "Donate Now"
+  → Razorpay Checkout opens
+  → Donor completes payment
+  → Redirect to /thank-you?id=<donation_id>
+  → Thank-you page shows donation summary
+```
+
+### 3.2 Alternative Path — Payment Cancelled
+```
+Donor opens Razorpay Checkout
+  → Donor clicks X or presses back
+  → Returns to donation page
+  → No error shown, form preserved
+  → Donor can retry
+```
+
+### 3.3 Alternative Path — Payment Failed
+```
+Donor completes payment attempt
+  → Razorpay reports failure
+  → Error message: "Payment could not be processed. No amount deducted."
+  → Donor stays on donation page
+  → Donor can retry with different method
+```
+
+### 3.4 Admin Flow — View Donor Log
+```
+Admin visits /admin/login
+  → Enters email + password
+  → Supabase Auth validates credentials
+  → Redirect to /admin (Dashboard)
+  → Views total donations count + total amount
+  → Navigates to /admin/donors
+  → Views searchable donor table
+  → Filters by date range
+  → Logs out when done
+```
+
+---
+
+## 4. API Design
+
+### 4.1 Endpoints
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| POST | `/api/create-order` | Public | Create Razorpay order |
+| POST | `/api/verify-payment` | Public | Verify payment + save donation |
+| POST | `/api/webhook/razorpay` | Razorpay Signature | Handle payment events |
+| GET | `/api/admin/donations` | Admin JWT | Fetch donor log |
+| GET | `/api/admin/stats` | Admin JWT | Fetch dashboard stats |
+| GET | `/api/health` | Public | Health check |
+
+### 4.2 Request/Response Contracts
+
+#### POST `/api/create-order`
+```json
+// Request
+{
+  "amount": 500,
+  "currency": "INR"
+}
+
+// Response — Success (200)
+{
+  "order_id": "order_xxxxxxxxx",
+  "amount": 50000,
+  "currency": "INR",
+  "key_id": "rzp_test_xxxxxxxxx"
+}
+
+// Response — Error (400)
+{
+  "error": "Invalid donation amount. Must be between ₹1 and ₹1,00,000."
+}
+```
+
+#### POST `/api/verify-payment`
+```json
+// Request
+{
+  "razorpay_order_id": "order_xxxxxxxxx",
+  "razorpay_payment_id": "pay_xxxxxxxxx",
+  "razorpay_signature": "xxxxxxxxxxxxxxxx",
+  "donor_name": "Rahul Sharma",
+  "donor_email": "rahul@example.com",
+  "donor_phone": "9876543210",
+  "amount": 500,
+  "cause_id": "uuid-of-cause"
+}
+
+// Response — Success (200)
+{
+  "success": true,
+  "donation_id": "uuid-of-donation",
+  "message": "Donation recorded successfully"
+}
+
+// Response — Error (400)
+{
+  "error": "Payment verification failed. Invalid signature."
+}
+```
+
+#### POST `/api/webhook/razorpay`
+```json
+// Request (from Razorpay)
+{
+  "event": "payment.captured",
+  "payload": {
+    "payment": {
+      "entity": {
+        "id": "pay_xxxxxxxxx",
+        "order_id": "order_xxxxxxxxx",
+        "amount": 50000,
+        "currency": "INR",
+        "status": "captured",
+        "method": "upi"
+      }
+    }
+  }
+}
+
+// Response — 200 OK (empty body)
+```
+
+#### GET `/api/admin/donations`
+```json
+// Query Parameters
+// ?page=1&limit=20&search=rahul&date_from=2026-01-01&date_to=2026-12-31
+
+// Response — Success (200)
+{
+  "donations": [
+    {
+      "id": "uuid",
+      "donor_name": "Rahul Sharma",
+      "donor_email": "rahul@example.com",
+      "amount": 500,
+      "currency": "INR",
+      "status": "completed",
+      "razorpay_payment_id": "pay_xxxxxxxxx",
+      "payment_method": "upi",
+      "created_at": "2026-06-10T10:30:00Z"
+    }
+  ],
+  "total": 150,
+  "page": 1,
+  "limit": 20
+}
+
+// Response — Unauthorized (401)
+{
+  "error": "Unauthorized. Please log in."
+}
+```
+
+#### GET `/api/admin/stats`
+```json
+// Response — Success (200)
+{
+  "total_donations": 150,
+  "total_amount": 125000,
+  "currency": "INR",
+  "donations_today": 5,
+  "amount_today": 3500
+}
+```
+
+### 4.3 Authentication Requirements
+- **Public endpoints**: No auth required (`create-order`, `verify-payment`)
+- **Webhook**: Razorpay signature verification (see [security.mdc](./extended/security.mdc))
+- **Admin endpoints**: Supabase JWT in `Authorization: Bearer <token>` header
+- Session managed via HTTP-only cookie (Supabase Auth helpers)
+
+---
+
+## 5. Edge Cases
+
+### Payment Edge Cases
+| # | Scenario | Expected Behavior |
+|---|---|---|
+| EC-01 | User pays but network drops before verify-payment | Webhook handles status update; user sees "verifying" message |
+| EC-02 | Same order_id submitted twice for verification | Return existing donation (idempotent), don't duplicate |
+| EC-03 | Webhook received before verify-payment call | Status updated to completed; verify-payment finds existing record |
+| EC-04 | User donates ₹0 or negative amount | 400 error: "Invalid amount" |
+| EC-05 | User donates > ₹1,00,000 | 400 error: "Amount exceeds maximum" |
+| EC-06 | Razorpay API is down during order creation | 502 error: "Payment service unavailable. Try again." |
+| EC-07 | User refreshes thank-you page | Shows cached donation data from query param |
+| EC-08 | User accesses /thank-you directly without donation | Redirect to / or show generic thank-you |
+
+### Admin Edge Cases
+| # | Scenario | Expected Behavior |
+|---|---|---|
+| EC-09 | Admin session expires mid-use | Redirect to login with "Session expired" message |
+| EC-10 | Admin searches for non-existent donor | Empty table with "No results found" message |
+| EC-11 | Admin filters by future date | Empty results, no error |
+| EC-12 | Multiple admins access simultaneously | No conflict — read-only operations |
+
+### Data Edge Cases
+| # | Scenario | Expected Behavior |
+|---|---|---|
+| EC-13 | Donor name contains special characters | Stored as-is, HTML-escaped on display |
+| EC-14 | Donor email with uppercase letters | Stored lowercase, case-insensitive search |
+| EC-15 | Very long donor name (> 255 chars) | Truncated at 255 characters |
+| EC-16 | Emoji in donor name | Stored (UTF-8 supported), displayed correctly |
+
+---
+
+## 6. KPIs (Success Metrics / Acceptance Criteria)
+
+> Detailed in [KPI.mdc](./KPI.mdc)
+
+| KPI Number | KPI Name | Verification Method | Status |
+|---|---|---|---|
+| KPI-001 | Payment flow works in test mode | E2E test with test card | Pending |
+| KPI-002 | Thank-you page displayed after donation | E2E test — verify redirect + content | Pending |
+| KPI-003 | Admin can view donor log | E2E test — login + verify table | Pending |
+| KPI-004 | Donation page loads < 3 seconds | Lighthouse CI | Pending |
+| KPI-005 | API response < 500ms | Integration test timing | Pending |
+| KPI-006 | Zero payment data stored locally | Security audit | Pending |
+| KPI-007 | Webhook signature verified on every call | Integration test | Pending |
+| KPI-008 | Admin routes protected by auth | Security test | Pending |
+| KPI-009 | Donor form validates required fields | Unit test | Pending |
+| KPI-010 | Mobile responsive design | Manual + Lighthouse | Pending |
+
+---
+
+## 7. Limitations
+
+### Technical Limitations
+- **Test Mode Only**: No real money processed; Razorpay test keys used
+- **No Recurring Donations**: One-time donations only
+- **No Receipt/Certificate Generation**: No 80G tax receipt auto-generation
+- **No Email Notifications**: No automated thank-you email to donors
+- **No Multi-Cause Support**: Single active cause at launch
+
+### Business Limitations
+- **Single NGO**: Platform serves one NGO only
+- **Single Currency**: INR only
+- **No Donor Accounts**: Donors don't create accounts or track history
+- **No Fundraising Goals**: No campaign-level goal tracking (beyond basic progress)
+- **No Social Sharing**: No integrated social media sharing (MVP)
+
+### Scope Boundaries
+- **In Scope**: See [Project_Scope.mdc](./Project_Scope.mdc)
+- **Out of Scope**: See [Project_Boundaries.mdc](./Project_Boundaries.mdc)
+- **Detailed Features**: See [features.mdc](./extended/features/features.mdc)
+
+---
+
+## 8. Dependencies
+
+| Dependency | Type | Risk | Mitigation |
+|---|---|---|---|
+| Razorpay API availability | External | Medium | Error handling + retry logic |
+| Supabase availability | External | Low | Managed service, 99.9% SLA |
+| Razorpay test mode keys | Configuration | Low | Documentation in .env.example |
+| Supabase project setup | Configuration | Low | Migration scripts provided |
+| Vercel deployment | Infrastructure | Low | Free tier, automated deploys |
+
+---
+
+## 9. Future Enhancements (Post-MVP)
+
+| # | Enhancement | Priority |
+|---|---|---|
+| 1 | Email receipt/thank-you to donor | P1 |
+| 2 | 80G tax receipt generation (PDF) | P1 |
+| 3 | Multi-cause support | P2 |
+| 4 | Recurring donations | P2 |
+| 5 | Donor account + donation history | P2 |
+| 6 | Social media sharing | P3 |
+| 7 | Campaign/goal management | P2 |
+| 8 | Export donor data (CSV) | P1 |
+| 9 | Mobile app (React Native) | P3 |
+| 10 | AI fraud detection | P3 |

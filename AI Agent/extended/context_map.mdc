@@ -1,0 +1,201 @@
+# Context Map & File Dependency Graph — DonateNow
+
+> This file defines the reading order and dependency relationships between all context engineering files.
+
+---
+
+## 1. File Dependency Graph
+
+```
+                    ┌─────────────────────┐
+                    │   Problem Statement  │
+                    │   (Business Idea)    │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │      PRD.mdc        │ ← Foundation document
+                    │ (What to build)     │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │                     │
+                    ▼                     ▼
+          ┌─────────────────┐   ┌─────────────────────┐
+          │    KPI.mdc      │   │   features.mdc      │
+          │ (How to measure)│   │ (Detailed stories)   │
+          └────────┬────────┘   └──────────┬──────────┘
+                   │                       │
+                   └───────────┬───────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Personas.mdc      │
+                    │ (Who builds what)   │
+                    │ ├─ Frontend Persona │
+                    │ ├─ Backend Persona  │
+                    │ └─ Database Persona │
+                    └──────────┬──────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+     ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+     │architecture  │ │   ERD.mdc    │ │  security    │
+     │   .mdc       │ │ (Data model) │ │   .mdc       │
+     │ (System map) │ │              │ │ (Protection) │
+     └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+            │                │                │
+            └────────────────┼────────────────┘
+                             │
+                ┌────────────┼────────────┐
+                │            │            │
+                ▼            ▼            ▼
+         ┌───────────┐ ┌──────────┐ ┌────────────┐
+         │error_     │ │ style-   │ │ testing    │
+         │handling   │ │ guide    │ │  .mdc      │
+         │  .mdc     │ │  .mdc    │ │            │
+         └─────┬─────┘ └────┬─────┘ └─────┬──────┘
+               │             │             │
+               └─────────────┼─────────────┘
+                             │
+                    ┌────────┴────────┐
+                    │                 │
+                    ▼                 ▼
+          ┌─────────────────┐ ┌──────────────────┐
+          │ Project_Scope   │ │ Project_         │
+          │    .mdc         │ │ Boundaries.mdc   │
+          └────────┬────────┘ └────────┬─────────┘
+                   │                   │
+                   └─────────┬─────────┘
+                             │
+                    ┌────────┴────────┐
+                    │                 │
+                    ▼                 ▼
+          ┌─────────────────┐ ┌──────────────────┐
+          │ deployment.mdc  │ │ observability    │
+          │                 │ │    .mdc          │
+          └─────────────────┘ └──────────────────┘
+                    │
+                    ▼
+          ┌─────────────────┐
+          │ Save_Token.mdc  │ ← Cross-cutting (applies to all)
+          │ Prompts.mdc     │ ← Process definition
+          │ Doc_Guide.mdc   │ ← Meta-documentation
+          │ context_map.mdc │ ← This file
+          └─────────────────┘
+```
+
+---
+
+## 2. AI Agent Reading Order
+
+### Phase 1: Understand (Read before any action)
+| Order | File | Purpose |
+|---|---|---|
+| 1 | `Save_Token.mdc` | Communication protocol |
+| 2 | `Project_Boundaries.mdc` | What NOT to do |
+| 3 | `PRD.mdc` | What to build |
+| 4 | `KPI.mdc` | How to measure success |
+
+### Phase 2: Design (Read before architecture decisions)
+| Order | File | Purpose |
+|---|---|---|
+| 5 | `features/features.mdc` | Detailed user stories |
+| 6 | `persona/frontend_persona.mdc` | Frontend tech decisions |
+| 7 | `persona/backend_persona.mdc` | Backend tech decisions |
+| 8 | `persona/database_persona.mdc` | Database tech decisions |
+
+### Phase 3: Architect (Read before implementation)
+| Order | File | Purpose |
+|---|---|---|
+| 9 | `extended/architecture.mdc` | System architecture |
+| 10 | `extended/ERD.mdc` | Database schema |
+| 11 | `extended/security.mdc` | Security rules |
+| 12 | `extended/error_handling.mdc` | Error states + state machine |
+| 13 | `extended/style-guide.mdc` | UI design system |
+
+### Phase 4: Implement (Read during development)
+| Order | File | Purpose |
+|---|---|---|
+| 14 | `Project_Scope.mdc` | Scope constraints |
+| 15 | `extended/deployment.mdc` | Hosting + env setup |
+| 16 | `extended/.env.example` | Required environment vars |
+
+### Phase 5: Verify (Read during testing)
+| Order | File | Purpose |
+|---|---|---|
+| 17 | `extended/testing.mdc` | Test strategy + commands |
+| 18 | `extended/observability.mdc` | Logging + monitoring |
+
+---
+
+## 3. File Cross-Reference Matrix
+
+| File | References | Referenced By |
+|---|---|---|
+| `PRD.mdc` | Problem Statement | KPI, Features, Personas, Architecture, Scope |
+| `KPI.mdc` | PRD | Testing, Features |
+| `frontend_persona.mdc` | PRD, KPI | Architecture, Style Guide |
+| `backend_persona.mdc` | PRD, KPI | Architecture, Security, Error Handling |
+| `database_persona.mdc` | PRD, KPI | ERD, Architecture |
+| `architecture.mdc` | PRD, Personas | ERD, Security, Deployment, Error Handling |
+| `ERD.mdc` | PRD, DB Persona, Architecture | Security (RLS), Testing |
+| `security.mdc` | Architecture, ERD | Testing, Deployment |
+| `error_handling.mdc` | PRD, Architecture, ERD | Testing |
+| `style-guide.mdc` | PRD, Frontend Persona | Features (UI specs) |
+| `features/features.mdc` | PRD, KPI, Architecture | Testing, Scope |
+| `testing.mdc` | PRD, KPI, Architecture, Security | Deployment |
+| `deployment.mdc` | Architecture, Security | — |
+| `observability.mdc` | Architecture, Error Handling | — |
+| `Project_Scope.mdc` | All above | Project_Boundaries |
+| `Project_Boundaries.mdc` | — | All (enforcement rules) |
+| `Save_Token.mdc` | — | All (communication rules) |
+
+---
+
+## 4. Conflict Resolution Priority
+
+When files contradict each other, follow this priority (highest to lowest):
+
+1. **Project_Boundaries.mdc** — Absolute rules, never override
+2. **Security.mdc** — Security requirements override convenience
+3. **PRD.mdc** — Business requirements are source of truth
+4. **KPI.mdc** — Success criteria validate PRD
+5. **Architecture.mdc** — Technical decisions follow PRD
+6. **ERD.mdc** — Data model follows architecture
+7. **Style-guide.mdc** — UI follows architecture + personas
+8. **Features.mdc** — Stories implement PRD requirements
+
+---
+
+## 5. Directory Structure Overview
+
+```
+DonateNow/
+└── AI Agent/
+    ├── PRD.mdc                      ← Core requirement
+    ├── KPI.mdc                      ← Success metrics
+    ├── Project_Scope.mdc            ← Scope definition
+    ├── Project_Boundaries.mdc       ← Development rules
+    ├── Save_Token.mdc               ← AI optimization
+    ├── Prompts.mdc                  ← Prompt catalog
+    ├── Documentation_Guide.mdc      ← Meta documentation
+    ├── persona/
+    │   ├── frontend_persona.mdc     ← Frontend decisions
+    │   ├── backend_persona.mdc      ← Backend decisions
+    │   └── database_persona.mdc     ← Database decisions
+    └── extended/
+        ├── architecture.mdc         ← System architecture
+        ├── ERD.mdc                  ← Database schema
+        ├── security.mdc             ← Security & auth
+        ├── testing.mdc              ← Test strategy
+        ├── error_handling.mdc       ← Error states
+        ├── style-guide.mdc          ← Design system
+        ├── deployment.mdc           ← Hosting & CI/CD
+        ├── observability.mdc        ← Logging & monitoring
+        ├── context_map.mdc          ← This file
+        ├── .env.example             ← Env vars template
+        └── features/
+            └── features.mdc         ← User stories
+```

@@ -1,0 +1,173 @@
+# Database Persona — DonateNow
+
+> Phase: 04 — Personas
+> Previous: [KPI.mdc](../KPI.mdc) | [PRD.mdc](../PRD.mdc) | [business_idea.mdc](../business_idea.mdc)
+> Next: [Project_Scope.mdc](../Project_Scope.mdc)
+> Extended: [ERD.mdc](../extended/ERD.mdc) | [security.mdc](../extended/security.mdc) | [architecture.mdc](../extended/architecture.mdc)
+
+---
+
+## Tech Stack
+
+| Technology | Version | Purpose |
+|---|---|---|
+| Supabase | Latest | Database-as-a-Service platform |
+| PostgreSQL | 15+ (Supabase managed) | Relational database engine |
+| Supabase Auth | Built-in | Admin user authentication |
+| Row Level Security (RLS) | Built-in | Data access control |
+| Supabase Realtime | Built-in (optional) | Live updates for admin (future) |
+
+---
+
+## Why Selected
+
+| Decision | Reason |
+|---|---|
+| Supabase over Firebase | PostgreSQL (relational) better for structured donation data + SQL queries |
+| Supabase over raw PostgreSQL | Managed service, built-in auth, RLS, dashboard, free tier |
+| Supabase over MongoDB | Donation data is structured + relational (cause → donations), SQL better fit |
+| PostgreSQL over MySQL | UUID support, JSON columns, better RLS, Supabase default |
+| Managed over Self-hosted | No DevOps overhead, automatic backups, free tier sufficient for MVP |
+
+---
+
+## Responsibilities
+
+1. Store and serve donation records
+2. Store and serve cause information
+3. Manage admin user profiles
+4. Enforce Row Level Security on all tables
+5. Provide data for admin dashboard aggregations
+6. Support filtered and paginated queries for donor log
+7. Maintain data integrity via constraints and triggers
+8. Auto-update `updated_at` timestamps via triggers
+
+---
+
+## Standards
+
+### Schema Design Rules
+1. Every table has a UUID primary key (`gen_random_uuid()`)
+2. Every table has `created_at` (TIMESTAMPTZ, DEFAULT now())
+3. Every table has `updated_at` (TIMESTAMPTZ, auto-updated via trigger)
+4. All foreign keys explicitly defined with ON DELETE behavior
+5. No hard deletes — use `is_active` flag for soft deletion
+6. Financial amounts use DECIMAL(12,2) — never FLOAT
+7. Status fields use VARCHAR with application-level enum validation
+8. All string fields have appropriate VARCHAR length limits
+
+### Data Integrity Rules
+1. Donation `amount` has CHECK constraint: `amount > 0`
+2. Razorpay `order_id` and `payment_id` are UNIQUE — prevents duplicates
+3. Donor `email` is NOT NULL (required by PRD)
+4. Donor `name` is NOT NULL (required by PRD)
+5. Donation records are **immutable** on financial fields (amount, currency)
+6. Status transitions validated at application level (see [error_handling.mdc](../extended/error_handling.mdc))
+
+### Indexing Strategy
+1. Primary keys auto-indexed
+2. `donations.created_at DESC` — admin table sorted by date
+3. `donations.status` — filter by payment status
+4. `donations.donor_email` — search by email
+5. `donations.razorpay_order_id` — webhook lookup
+6. `donations.razorpay_payment_id` — webhook lookup
+7. `donations.cause_id` — cause-wise filtering
+8. `causes.is_active` — active cause lookup
+9. `admin_users.email` — login lookup
+10. `admin_users.supabase_auth_id` — auth linkage
+
+### Security Rules (RLS)
+1. RLS enabled on ALL tables — no exceptions
+2. `donations` — INSERT: service_role only; SELECT: authenticated admin only
+3. `causes` — SELECT: public (anon, active only); ALL: admin only
+4. `admin_users` — ALL: service_role or own authenticated user
+5. No UPDATE on `donations.amount` — enforced at application level
+6. No DELETE on `donations` — no delete policy defined
+
+### Query Patterns
+```sql
+-- Donor log (admin)
+SELECT * FROM donations
+WHERE status = 'completed'
+ORDER BY created_at DESC
+LIMIT 20 OFFSET 0;
+
+-- Search donors
+SELECT * FROM donations
+WHERE (donor_name ILIKE '%search%' OR donor_email ILIKE '%search%')
+  AND status = 'completed'
+ORDER BY created_at DESC;
+
+-- Dashboard stats
+SELECT
+  COUNT(*) as total_donations,
+  COALESCE(SUM(amount), 0) as total_amount
+FROM donations
+WHERE status = 'completed';
+
+-- Today's stats
+SELECT
+  COUNT(*) as donations_today,
+  COALESCE(SUM(amount), 0) as amount_today
+FROM donations
+WHERE status = 'completed'
+  AND created_at >= CURRENT_DATE;
+
+-- Active cause
+SELECT * FROM causes WHERE is_active = true LIMIT 1;
+
+-- Webhook: find donation by order_id
+SELECT * FROM donations WHERE razorpay_order_id = $1;
+```
+
+---
+
+## Deliverables
+
+| # | Deliverable | Type |
+|---|---|---|
+| 1 | `causes` table | Schema + RLS + Seed data |
+| 2 | `donations` table | Schema + RLS + Indexes |
+| 3 | `admin_users` table | Schema + RLS |
+| 4 | `update_updated_at()` trigger function | Trigger |
+| 5 | Triggers on all tables | Auto-update updated_at |
+| 6 | RLS policies for all tables | Security policies |
+| 7 | Indexes on frequent query columns | Performance |
+| 8 | Seed data (cause + admin user) | Initial data |
+| 9 | Migration SQL script | Deployment artifact |
+
+---
+
+## Data Model Reference
+
+> Full schema defined in [ERD.mdc](../extended/ERD.mdc)
+
+### Quick Reference
+```
+causes          → id, title, description, target_amount, raised_amount, is_active
+donations       → id, cause_id(FK), donor_name, donor_email, amount, status, razorpay_*
+admin_users     → id, email, name, role, supabase_auth_id(FK)
+```
+
+### Status Values
+```
+initiated → pending → completed (happy path)
+initiated → cancelled (user cancelled)
+pending → failed (payment failed)
+completed → refunded (manual refund)
+```
+
+---
+
+## Backup & Recovery
+
+### Supabase Managed (Free Tier)
+- Daily automatic backups (retained 7 days)
+- Point-in-time recovery not available on free tier
+- Manual backup: Export via Supabase Dashboard → SQL Editor
+
+### Recommended Practice
+- Export migration SQL to version control
+- Seed data committed to repository
+- RLS policies committed as SQL files
+- Before production: Consider Supabase Pro for PITR

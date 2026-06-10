@@ -1,0 +1,278 @@
+# Project Scope — DonateNow
+
+> Phase: 05 — Scope Definition
+> Previous: [Personas](./persona/) | [KPI.mdc](./KPI.mdc) | [PRD.mdc](./PRD.mdc) | [business_idea.mdc](./business_idea.mdc)
+> Next: [Project_Boundaries.mdc](./Project_Boundaries.mdc) | [Detailed_Project_Scope.mdc](./Detailed_Project_Scope.mdc)
+> Extended: [architecture.mdc](./extended/architecture.mdc) | [features.mdc](./extended/features/features.mdc)
+
+---
+
+## Executive Summary
+
+DonateNow is a web-based donation platform for a local NGO to replace manual bank-transfer-based donation collection. The platform will enable donors to give online via a public donation page, process payments through Razorpay (test mode), display a thank-you confirmation, and provide an admin panel for the NGO team to track donor information.
+
+**Scope**: MVP — single cause, single NGO, one-time donations, test mode payments.
+
+---
+
+## Business Context
+
+### Organization
+- Type: Local NGO (Non-Governmental Organization)
+- Size: Small team (2-5 members managing donations)
+- Current Process: Bank transfers + manual spreadsheet tracking
+- Geographic Focus: India (INR currency)
+
+### Business Drivers
+1. Eliminate manual reconciliation overhead
+2. Provide donors a modern, digital giving experience
+3. Enable real-time visibility into donation data
+4. Create a shareable link for donation campaigns
+
+### Industry Context
+- Digital donation platforms are standard for NGOs globally
+- Indian NGOs increasingly adopt UPI and digital payment methods
+- Regulatory requirement for donor records (FCRA, 80G in future)
+
+---
+
+## Business Goals
+
+| # | Goal | Measurable Outcome | Timeline |
+|---|---|---|---|
+| BG-01 | Digitize donation collection | 100% donations via platform | MVP Launch |
+| BG-02 | Automate donor tracking | Zero manual data entry | MVP Launch |
+| BG-03 | Improve donor experience | < 3 clicks to donate | MVP Launch |
+| BG-04 | Provide real-time visibility | Admin dashboard live | MVP Launch |
+| BG-05 | Create shareable donation link | Single URL for campaigns | MVP Launch |
+
+---
+
+## Project Objectives
+
+| # | Objective | Deliverable |
+|---|---|---|
+| PO-01 | Build public donation page | `/` — cause display + donation form |
+| PO-02 | Integrate Razorpay payments | Test mode payment flow (card/UPI/netbanking) |
+| PO-03 | Build thank-you confirmation | `/thank-you` — donation summary |
+| PO-04 | Build admin authentication | `/admin/login` — Supabase Auth |
+| PO-05 | Build admin dashboard | `/admin` — stats + recent donations |
+| PO-06 | Build donor log | `/admin/donors` — searchable table |
+| PO-07 | Design database schema | 3 tables: causes, donations, admin_users |
+| PO-08 | Implement security | RLS, webhook verification, admin auth |
+
+---
+
+## Stakeholders
+
+| Stakeholder | Role | Interest | Involvement |
+|---|---|---|---|
+| NGO Management | Sponsor | Project success, donor visibility | Decision approval |
+| NGO Admin Team | Primary User | Daily use of admin panel | Testing, feedback |
+| Donors | End User | Easy donation experience | Use donation page |
+| Developer | Builder | Clean code, proper architecture | Development |
+| AI Agent | Builder | Context-aware development | Follow PRD + Personas |
+
+---
+
+## Target Users
+
+### User 1: Donor
+- **Who**: General public, NGO supporters, well-wishers
+- **Tech Comfort**: Basic smartphone/computer user
+- **Needs**: Simple form, familiar payment method (UPI/card), instant confirmation
+- **Frequency**: One-time or occasional donations
+- **Device**: Mobile (60%) + Desktop (40%)
+
+### User 2: NGO Admin
+- **Who**: NGO team member responsible for donation management
+- **Tech Comfort**: Moderate — can use web dashboards
+- **Needs**: View donor list, search donors, see totals, date filters
+- **Frequency**: Daily or weekly access
+- **Device**: Desktop (80%) + Mobile (20%)
+
+---
+
+## Scope Definition
+
+### In Scope ✅
+
+| # | Item | Details |
+|---|---|---|
+| 1 | Public Donation Page | Cause display, predefined amounts (₹100/₹500/₹1000/₹2000), custom amount, donor form |
+| 2 | Razorpay Payment (Test Mode) | Order creation, checkout, signature verification, webhook handling |
+| 3 | Thank-You Page | Donation summary with amount, reference ID, date |
+| 4 | Admin Login | Email/password via Supabase Auth |
+| 5 | Admin Dashboard | Total donations count, total amount, recent 10 donations |
+| 6 | Donor Log Table | Name, email, amount, date, payment ID, status — searchable, filterable, paginated |
+| 7 | Database Schema | causes, donations, admin_users tables with RLS |
+| 8 | API Routes | create-order, verify-payment, webhook, admin endpoints |
+| 9 | Mobile Responsive | All pages work on 360px+ screens |
+| 10 | Error Handling | Payment failures, validation errors, auth errors |
+
+### Out of Scope ❌
+
+| # | Item | Reason |
+|---|---|---|
+| 1 | Recurring donations | MVP — future enhancement |
+| 2 | Email notifications to donors | MVP — future enhancement |
+| 3 | 80G tax receipt generation | Requires legal setup, future enhancement |
+| 4 | Multi-cause support | MVP — single cause only |
+| 5 | Donor account/login | Donors don't need accounts |
+| 6 | Social media sharing | MVP — future enhancement |
+| 7 | CSV/PDF export | MVP — future enhancement |
+| 8 | Mobile app | Web-only for MVP |
+| 9 | Multi-currency support | INR only |
+| 10 | Razorpay live mode | Test mode only for this project |
+| 11 | Multi-language support | English only |
+| 12 | Analytics/charts | Basic stats only, no charts in MVP |
+| 13 | Admin user management | Single admin, manual setup |
+| 14 | Refund processing | Via Razorpay Dashboard only |
+| 15 | Payment retry automation | Manual retry by donor |
+
+---
+
+## Business Processes
+
+### Process 1: Donation Collection
+```
+Donor → Visit Donation Page → Select Amount → Fill Info → Pay → Thank You
+```
+
+### Process 2: Donor Tracking
+```
+Payment Webhook → Insert/Update Donation Record → Available in Admin Panel
+```
+
+### Process 3: Admin Reporting
+```
+Admin Login → View Dashboard Stats → View/Search Donor Log → Logout
+```
+
+---
+
+## Assumptions
+
+| # | Assumption | Impact if Wrong |
+|---|---|---|
+| A-01 | NGO has a Razorpay account (or can create one) | Cannot process payments |
+| A-02 | NGO team has email access for admin login | Cannot authenticate |
+| A-03 | Target donors have smartphone/computer + internet | Cannot reach donors |
+| A-04 | Indian donors primarily (INR, UPI, Indian cards) | Payment methods mismatch |
+| A-05 | Single cause active at any time | UI design is simpler |
+| A-06 | < 1000 donations/month initially | Free tier sufficient |
+| A-07 | NGO doesn't need real-time notifications | No push/email alerts |
+| A-08 | Supabase free tier is sufficient for MVP | No cost |
+| A-09 | Vercel free tier is sufficient for hosting | No cost |
+
+---
+
+## Constraints
+
+| # | Constraint | Type | Impact |
+|---|---|---|---|
+| C-01 | Test mode only (no real money) | Business | Limited to demo/POC |
+| C-02 | Single developer + AI agent | Resource | Sequential development |
+| C-03 | Free tier services (Supabase, Vercel) | Budget | Service limits apply |
+| C-04 | No backend server (serverless only) | Technical | Cold start latency |
+| C-05 | Razorpay India-only for test mode | Geographic | India-focused |
+| C-06 | No CI/CD pipeline for MVP | Process | Manual deployment |
+
+---
+
+## Risks
+
+| # | Risk | Probability | Impact | Mitigation |
+|---|---|---|---|---|
+| R-01 | Razorpay API downtime | Low | High | Error handling + retry + user message |
+| R-02 | Supabase free tier limits exceeded | Low | Medium | Monitor usage, upgrade if needed |
+| R-03 | Webhook delivery failure | Low | High | Razorpay retries for 24h, idempotent handling |
+| R-04 | Payment reconciliation mismatch | Low | High | Dual verification (client verify + webhook) |
+| R-05 | Admin credentials compromised | Low | High | Strong passwords, session expiry |
+| R-06 | Donor data breach | Very Low | Critical | RLS, server-only secrets, HTTPS |
+
+---
+
+## Dependencies
+
+| # | Dependency | Type | Owner | Status |
+|---|---|---|---|---|
+| D-01 | Razorpay Test Account | External | NGO / Developer | Required before dev |
+| D-02 | Supabase Project | External | Developer | Required before dev |
+| D-03 | Vercel Account | External | Developer | Required for deployment |
+| D-04 | Domain (optional) | External | NGO | Nice to have |
+| D-05 | NGO Cause Content | Content | NGO | Required for donation page |
+
+---
+
+## Success Criteria
+
+> Detailed in [KPI.mdc](./KPI.mdc)
+
+### MVP Launch Criteria (All must pass)
+1. ✅ Payment flow works end-to-end in test mode (KPI-001)
+2. ✅ Thank-you page displays after donation (KPI-002)
+3. ✅ Admin can view donor log (KPI-003)
+4. ✅ Admin routes are auth-protected (KPI-019)
+5. ✅ No payment data stored in database (KPI-017)
+
+---
+
+## Non-Functional Expectations
+
+| Aspect | Requirement | Reference |
+|---|---|---|
+| Performance | Page load < 3 seconds, API < 500ms | KPI-013, KPI-014 |
+| Security | RLS, signature verification, admin auth | [security.mdc](./extended/security.mdc) |
+| Availability | Supabase 99.9%, Vercel 99.99% | Managed services |
+| Scalability | Handles < 1000 donations/month on free tier | Supabase limits |
+| Accessibility | WCAG AA (color contrast, keyboard nav, labels) | Frontend Persona |
+| Responsiveness | Mobile-first, 360px+ support | Frontend Persona |
+
+---
+
+## Future Scope (Post-MVP Roadmap)
+
+| Phase | Features | Priority |
+|---|---|---|
+| Phase 2 | Email receipts, CSV export, 80G certificate | P1 |
+| Phase 3 | Multi-cause support, campaign management | P2 |
+| Phase 4 | Recurring donations, donor accounts | P2 |
+| Phase 5 | Mobile app, social sharing, analytics | P3 |
+
+---
+
+## Scope Governance
+
+### Change Request Process
+1. Any scope change must be documented
+2. Impact on timeline, KPIs, and architecture must be assessed
+3. Approval required before implementation
+4. Update PRD, KPI, and Scope documents accordingly
+
+### Scope Freeze
+- Scope is frozen after approval of this document
+- Only bug fixes and approved changes during development
+- Feature requests logged for future phases
+
+---
+
+## Open Questions
+
+| # | Question | Impact | Status |
+|---|---|---|---|
+| OQ-01 | Does NGO have a Razorpay account? | Blocks payment setup | ⏳ Pending |
+| OQ-02 | What cause content to display? (title, description, image) | Blocks donation page | ⏳ Pending |
+| OQ-03 | Who will be the admin user(s)? (email addresses) | Blocks admin setup | ⏳ Pending |
+| OQ-04 | Target amount for the cause? | Blocks progress bar | ⏳ Pending |
+| OQ-05 | Custom domain needed? | Blocks DNS setup | ⏳ Pending |
+
+---
+
+## Sign-Off
+
+| Role | Name | Approval | Date |
+|---|---|---|---|
+| Project Sponsor | NGO Management | ☐ Pending | — |
+| Developer | — | ☐ Pending | — |
+| Reviewer | — | ☐ Pending | — |

@@ -1,0 +1,195 @@
+# Deployment Strategy — DonateNow
+
+> Reference: [architecture.mdc](./architecture.mdc) | [security.mdc](./security.mdc) | [testing.mdc](./testing.mdc)
+
+---
+
+## 1. Hosting Architecture
+
+| Component | Platform | Plan |
+|---|---|---|
+| Next.js App | Vercel | Free / Hobby |
+| Database | Supabase | Free Tier |
+| Payments | Razorpay | Test Mode (Free) |
+| Domain | Custom (optional) | Vercel DNS or external |
+
+---
+
+## 2. Environments
+
+| Environment | Purpose | Branch | URL |
+|---|---|---|---|
+| Local Dev | Development + testing | `main` (local) | `http://localhost:3000` |
+| Preview | PR review + staging | Feature branches | `https://<branch>.vercel.app` |
+| Production | Live application | `main` | `https://donatenow.vercel.app` |
+
+---
+
+## 3. Vercel Deployment Configuration
+
+### Project Setup
+```bash
+# Install Vercel CLI (optional)
+npm i -g vercel
+
+# Deploy from project root
+vercel
+
+# Or connect via Vercel Dashboard:
+# 1. Import Git repository
+# 2. Framework Preset: Next.js
+# 3. Root Directory: ./
+# 4. Build Command: next build
+# 5. Output Directory: .next
+```
+
+### Build Settings
+```
+Framework Preset: Next.js
+Node.js Version: 18.x
+Build Command: npm run build
+Install Command: npm install
+Output Directory: .next
+```
+
+### Environment Variables (Vercel Dashboard)
+```
+# Set each variable in Vercel Dashboard → Settings → Environment Variables
+
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxx
+RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+RAZORPAY_WEBHOOK_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIs...
+```
+
+### Scope Settings
+| Variable | Development | Preview | Production |
+|---|---|---|---|
+| Razorpay Keys | Test keys | Test keys | **Production keys** |
+| Supabase URL | Dev project | Dev project | **Production project** |
+| Webhook Secret | Test secret | Test secret | **Production secret** |
+
+---
+
+## 4. Supabase Setup
+
+### Project Creation
+1. Go to [supabase.com](https://supabase.com) → Create Project
+2. Select region closest to users (e.g., Mumbai for India)
+3. Set database password (save securely)
+4. Note down: Project URL, Anon Key, Service Role Key
+
+### Database Migration
+```bash
+# Option 1: Use Supabase SQL Editor
+# Paste SQL from ERD.mdc → Section 5
+
+# Option 2: Use Supabase CLI
+npx supabase init
+npx supabase db push
+```
+
+### RLS Setup
+- Run RLS policies from [security.mdc](./security.mdc) → Section 4
+- Verify via Supabase Dashboard → Authentication → Policies
+
+### Seed Data
+- Run seed SQL from [ERD.mdc](./ERD.mdc) → Section 6
+- Create admin user via Supabase Dashboard → Authentication → Users
+
+---
+
+## 5. Razorpay Setup
+
+### Test Mode Configuration
+1. Sign up at [razorpay.com](https://razorpay.com)
+2. Navigate to Settings → API Keys
+3. Generate **Test Mode** keys
+4. Note down: `key_id` (starts with `rzp_test_`) and `key_secret`
+
+### Webhook Configuration
+1. Go to Razorpay Dashboard → Settings → Webhooks
+2. Add new webhook:
+   - URL: `https://donatenow.vercel.app/api/webhook/razorpay`
+   - Secret: Generate and save
+   - Events: `payment.captured`, `payment.failed`
+   - Active: Yes
+
+### For Local Webhook Testing
+```bash
+# Use ngrok to expose local server
+ngrok http 3000
+
+# Configure Razorpay webhook URL to ngrok URL:
+# https://<random>.ngrok.io/api/webhook/razorpay
+```
+
+---
+
+## 6. Local Development Setup
+
+```bash
+# 1. Clone repository
+git clone <repo-url>
+cd DonateNow
+
+# 2. Install dependencies
+npm install
+
+# 3. Create environment file
+cp .env.example .env.local
+
+# 4. Fill in environment variables in .env.local
+
+# 5. Run development server
+npm run dev
+
+# 6. Open browser
+# http://localhost:3000        → Donation page
+# http://localhost:3000/admin  → Admin panel
+```
+
+---
+
+## 7. CI/CD Pipeline (Future)
+
+```
+Push to feature branch
+  → Vercel Preview Deployment (auto)
+  → Run linting (npm run lint)
+  → Run unit tests (npm run test)
+  → Preview URL generated for review
+
+Merge to main
+  → Vercel Production Deployment (auto)
+  → Run full test suite
+  → Deploy to production URL
+```
+
+---
+
+## 8. Deployment Checklist
+
+### Before First Deployment
+- [ ] Supabase project created
+- [ ] Database tables created (run migration SQL)
+- [ ] RLS policies applied
+- [ ] Seed data inserted (cause + admin user)
+- [ ] Razorpay test keys generated
+- [ ] Razorpay webhook configured
+- [ ] All environment variables set in Vercel
+- [ ] `.env.local` is in `.gitignore`
+- [ ] Build succeeds locally (`npm run build`)
+- [ ] All tests pass (`npm run test`)
+
+### Before Going to Production (Future)
+- [ ] Switch to Razorpay **Live Mode** keys
+- [ ] Create separate Supabase production project
+- [ ] Update webhook URL to production domain
+- [ ] Enable HTTPS (Vercel handles automatically)
+- [ ] Set up custom domain (optional)
+- [ ] Configure Vercel Analytics (optional)
+- [ ] Test full payment flow with real card
+- [ ] Backup database migration scripts

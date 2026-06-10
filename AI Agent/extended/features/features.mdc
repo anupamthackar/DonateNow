@@ -1,0 +1,239 @@
+# Feature Breakdown & User Stories — DonateNow
+
+> Reference: [PRD.mdc](../PRD.mdc) | [KPI.mdc](../KPI.mdc) | [architecture.mdc](../extended/architecture.mdc) | [ERD.mdc](../extended/ERD.mdc)
+
+---
+
+## Feature Map
+
+```
+DonateNow
+├── F01: Public Donation Page
+├── F02: Payment Integration (Razorpay)
+├── F03: Thank-You Page
+├── F04: Admin Authentication
+├── F05: Admin Dashboard
+└── F06: Donor Log (Admin)
+```
+
+---
+
+## F01: Public Donation Page
+
+### Description
+A public-facing page that displays the NGO's cause and allows users to donate a predefined or custom amount.
+
+### User Stories
+
+**US-01.1**: As a **donor**, I can view the cause title and description so that I understand what I am donating for.
+- **Acceptance Criteria**:
+  - Cause title is displayed prominently (H1)
+  - Cause description is visible below the title
+  - Cause image/banner is displayed (if available)
+  - Target amount and raised amount are shown with a progress bar
+
+**US-01.2**: As a **donor**, I can select a predefined donation amount (₹100, ₹500, ₹1000, ₹2000) so that I can quickly choose how much to donate.
+- **Acceptance Criteria**:
+  - Four predefined amount buttons are visible
+  - Clicking a button selects it (visual highlight)
+  - Only one amount can be selected at a time
+  - Selected amount is passed to payment flow
+
+**US-01.3**: As a **donor**, I can enter a custom donation amount so that I can donate any amount I prefer.
+- **Acceptance Criteria**:
+  - Custom amount input field is available
+  - Entering a custom amount deselects predefined buttons
+  - Minimum: ₹1, Maximum: ₹1,00,000
+  - Invalid amounts show inline error
+  - Only numeric input accepted
+
+**US-01.4**: As a **donor**, I can enter my name, email, and phone so that the NGO has my contact information.
+- **Acceptance Criteria**:
+  - Name field: required, min 2 characters
+  - Email field: required, valid email format
+  - Phone field: optional, 10-digit Indian number format
+  - Inline validation on blur
+  - Form cannot submit with errors
+
+**US-01.5**: As a **donor**, I can click "Donate Now" to proceed to payment so that I can complete my donation.
+- **Acceptance Criteria**:
+  - Button is disabled until amount + required fields are filled
+  - Loading state shown while order is being created
+  - Razorpay Checkout opens after order creation
+  - Error message if order creation fails
+
+---
+
+## F02: Payment Integration (Razorpay)
+
+### Description
+Integration with Razorpay payment gateway in test mode for processing donations.
+
+### User Stories
+
+**US-02.1**: As a **donor**, I can pay using Razorpay Checkout (card/UPI/netbanking) so that my donation is processed securely.
+- **Acceptance Criteria**:
+  - Razorpay Checkout modal opens with correct amount
+  - Donor name and email are pre-filled in Checkout
+  - All payment methods available (card, UPI, netbanking, wallet)
+  - Payment is processed in test mode
+  - On success: redirect to thank-you page
+  - On failure: return to donation page with error message
+
+**US-02.2**: As a **system**, payment signature is verified server-side so that only legitimate payments are recorded.
+- **Acceptance Criteria**:
+  - POST `/api/verify-payment` validates Razorpay signature
+  - Invalid signatures are rejected (400 response)
+  - Valid payments create a donation record in Supabase
+  - Razorpay order_id and payment_id are stored
+
+**US-02.3**: As a **system**, Razorpay webhooks update donation status so that the donor log is accurate.
+- **Acceptance Criteria**:
+  - Webhook endpoint: POST `/api/webhook/razorpay`
+  - Webhook signature is verified
+  - `payment.captured` → status = `completed`
+  - `payment.failed` → status = `failed`
+  - Duplicate events handled idempotently
+
+---
+
+## F03: Thank-You Page
+
+### Description
+A confirmation page displayed after successful donation.
+
+### User Stories
+
+**US-03.1**: As a **donor**, I see a thank-you message after donating so that I know my donation was successful.
+- **Acceptance Criteria**:
+  - Page shows "Thank You for Your Donation!" heading
+  - Donation amount is displayed (₹500)
+  - Donor name is displayed
+  - Razorpay payment reference ID is shown
+  - Date and time of donation shown
+  - Success checkmark animation on load
+
+**US-03.2**: As a **donor**, I can navigate back to donate again so that I can make another donation.
+- **Acceptance Criteria**:
+  - "Donate Again" button links to `/`
+  - Button is clearly visible
+
+**US-03.3**: As a **donor**, I cannot access the thank-you page without a valid donation so that the page is not abused.
+- **Acceptance Criteria**:
+  - Direct access to `/thank-you` without query params shows generic message or redirects to `/`
+  - Donation ID is passed via query parameter
+  - Page validates donation exists before showing details
+
+---
+
+## F04: Admin Authentication
+
+### Description
+Login functionality for NGO admin team to access the donor dashboard.
+
+### User Stories
+
+**US-04.1**: As an **admin**, I can log in with email and password so that I can access the admin panel.
+- **Acceptance Criteria**:
+  - Login page at `/admin/login`
+  - Email + password form
+  - Supabase Auth handles authentication
+  - On success: redirect to `/admin`
+  - On failure: show "Invalid credentials" error
+  - Session persists across page refreshes (JWT cookie)
+
+**US-04.2**: As an **admin**, I can log out so that my session is terminated.
+- **Acceptance Criteria**:
+  - Logout button in admin sidebar/header
+  - Clicking logout clears session
+  - Redirect to `/admin/login`
+
+**US-04.3**: As a **system**, unauthenticated users are blocked from admin pages so that donor data is protected.
+- **Acceptance Criteria**:
+  - All `/admin/*` routes check for valid session
+  - No session → redirect to `/admin/login`
+  - Expired session → redirect to `/admin/login` with "Session expired" message
+
+---
+
+## F05: Admin Dashboard
+
+### Description
+Overview dashboard showing donation statistics.
+
+### User Stories
+
+**US-05.1**: As an **admin**, I can view total donations count so that I know how many people donated.
+- **Acceptance Criteria**:
+  - Stat card showing total number of completed donations
+  - Updates in real-time (or on page load)
+
+**US-05.2**: As an **admin**, I can view total amount raised so that I know the fundraising progress.
+- **Acceptance Criteria**:
+  - Stat card showing total ₹ amount of completed donations
+  - Formatted as Indian currency (₹1,00,000)
+
+**US-05.3**: As an **admin**, I can view recent donations so that I can see latest activity.
+- **Acceptance Criteria**:
+  - List of last 10 donations on dashboard
+  - Shows: donor name, amount, date, status
+  - "View All" link to `/admin/donors`
+
+---
+
+## F06: Donor Log (Admin)
+
+### Description
+A detailed table of all donation records.
+
+### User Stories
+
+**US-06.1**: As an **admin**, I can view all donor details in a table so that I have a complete donor record.
+- **Acceptance Criteria**:
+  - Table columns: Donor Name, Email, Amount, Date, Payment ID, Status
+  - Sorted by date (newest first)
+  - Pagination (20 records per page)
+
+**US-06.2**: As an **admin**, I can search donors by name or email so that I can find specific donations.
+- **Acceptance Criteria**:
+  - Search input at top of table
+  - Searches by donor name or email
+  - Results update as user types (debounced 300ms)
+
+**US-06.3**: As an **admin**, I can filter donations by date range so that I can view donations for a specific period.
+- **Acceptance Criteria**:
+  - Date from and date to inputs
+  - Apply filter button
+  - Clear filter option
+  - Results show only donations within range
+
+---
+
+## Feature Priority Matrix
+
+| Feature | Priority | MVP Required | Complexity |
+|---|---|---|---|
+| F01: Donation Page | P0 — Critical | ✅ Yes | Medium |
+| F02: Payment Integration | P0 — Critical | ✅ Yes | High |
+| F03: Thank-You Page | P0 — Critical | ✅ Yes | Low |
+| F04: Admin Auth | P0 — Critical | ✅ Yes | Medium |
+| F05: Admin Dashboard | P1 — Important | ✅ Yes | Medium |
+| F06: Donor Log | P0 — Critical | ✅ Yes | Medium |
+
+---
+
+## Feature Dependencies
+
+```
+F01 (Donation Page)
+  └── depends on → F02 (Payment Integration)
+        └── triggers → F03 (Thank-You Page)
+
+F04 (Admin Auth)
+  └── gates → F05 (Admin Dashboard)
+  └── gates → F06 (Donor Log)
+
+F02 (Payment Integration)
+  └── writes to → Database (donations table)
+        └── read by → F05 + F06
+```
