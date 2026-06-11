@@ -71,18 +71,21 @@
 
 ```
 DonateNow/
-├── DonateNowApp.swift           → App entry point
-├── Configuration/               
-│   ├── Config.xcconfig          → Local environment config
-│   └── Info.plist               
-├── Models/                      → Swift Codable structs (Cause, Donation)
-├── Views/                       
-│   ├── Public/                  → DonationView, ThankYouView
-│   ├── Admin/                   → AdminLoginView, Dashboard, DonorLog
-│   └── Components/              → Reusable SwiftUI elements
-├── ViewModels/                  → State and business logic (@Observable)
-├── Services/                    → API calls (SupabaseManager, PaymentService)
-└── Theme/                       → Colors, Typography, ViewModifiers
+├── AI Agent/                    → AI design and architecture docs
+├── src/
+│   ├── Backend/                 → Supabase Edge Functions (Deno/TS)
+│   ├── Database/                → SQL schema and migrations
+│   ├── Frontend/DonateNow/      → Native iOS App Workspace
+│   │   ├── DonateNowApp.swift   → App entry point
+│   │   ├── Configuration/       → Local environment config (Config.xcconfig)
+│   │   ├── Models/              → Swift Codable structs
+│   │   ├── Views/               → SwiftUI views (Public, Admin, Components)
+│   │   ├── ViewModels/          → State and business logic (@Observable)
+│   │   ├── Services/            → Supabase and Payment API calls
+│   │   ├── Theme/               → Colors, Typography, ViewModifiers
+│   │   ├── DonateNowTests/      → Unit & Integration tests (Swift Testing)
+│   │   └── DonateNowUITests/    → End-to-End tests (XCUITest)
+│   └── supabase/                → Local Supabase configuration
 ```
 
 ---
@@ -116,7 +119,7 @@ git clone https://github.com/anupamthackar/DonateNow.git
 cd DonateNow
 
 # Set up environment variables
-cp "AI Agent/extended/Config.example.xcconfig" Configuration/Config.xcconfig
+cp "AI Agent/extended/Config.example.xcconfig" "src/Frontend/DonateNow/Configuration/Config.xcconfig"
 # Edit Config.xcconfig with your Supabase URL and public keys
 ```
 
@@ -159,9 +162,18 @@ Since secrets cannot be stored on the device, critical operations run via Edge F
 
 ## 🧪 Testing
 
-- **Unit Tests (XCTest)**: Validations, formatters, and logic.
-- **UI Tests (XCUITest)**: End-to-end user flows (Donation, Admin Login).
-- **Performance Profiling**: Xcode Instruments (Time Profiler, Allocations).
+The project uses the modern **Swift Testing** framework alongside XCTest for comprehensive coverage.
+
+- **Unit Tests (`Swift Testing`)**: Robust tests covering `Validators`, `Formatters`, and `Models` decoding logic.
+- **Integration Tests (`Swift Testing`)**: Verifies Supabase connections, `create-order` execution, and `verify-payment` handling, including edge cases and failure scenarios.
+- **UI Tests (`XCUITest`)**: End-to-end user flows for the Donation flow, Admin Dashboard, and validation states.
+
+**Running Tests:**
+- In Xcode, select the `DonateNow` scheme and press **Cmd+U**.
+- Alternatively, run via `xcodebuild` from the terminal:
+  ```bash
+  xcodebuild test -project src/Frontend/DonateNow/DonateNow.xcodeproj -scheme DonateNow -destination 'platform=iOS Simulator,name=iPhone 15 Pro'
+  ```
 
 ---
 
