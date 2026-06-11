@@ -9,5 +9,5 @@
 // https://developer.apple.com/documentation/xcode/adding-a-build-configuration-file-to-your-project
 
 SUPABASE_URL = https://gqubhatlrjfcxrrywsjr.supabase.co
-SUPABASE_ANON_KEY = your_real_supabase_anon_key
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxdWJoYXRscmpmY3hycnl3c2pyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwODA3ODksImV4cCI6MjA5NjY1Njc4OX0.3oH5s3iW0t89bcxlf4TrxFmHI84Nf92MFd5Cjj7fdVg
 RAZORPAY_KEY_ID = rzp_test_SzvMI0AIDCH6DP

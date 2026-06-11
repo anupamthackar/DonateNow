@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import Supabase
 
 @MainActor
@@ -28,6 +29,7 @@ class DashboardViewModel: ObservableObject {
             self.totalCount = stats.total_count
             self.totalAmount = stats.total_amount
         } catch {
+            if Task.isCancelled { return }
             self.errorMessage = "Failed to load stats: \(error.localizedDescription)"
         }
         isLoading = false

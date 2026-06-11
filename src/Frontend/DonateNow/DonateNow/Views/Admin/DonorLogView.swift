@@ -143,6 +143,41 @@ struct DonorLogView: View {
                     }
                     .padding(.top, 16)
                 }
+            } else if let error = viewModel.errorMessage {
+                // Error State
+                VStack(spacing: 16) {
+                    Spacer()
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 48))
+                        .foregroundColor(.orange)
+                        .padding()
+                        .background(Color.orange.opacity(0.1))
+                        .clipShape(Circle())
+                    
+                    Text("Failed to Load Logs")
+                        .font(.headline)
+                    
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                    
+                    Button {
+                        Task { await viewModel.fetchDonations() }
+                    } label: {
+                        Text("Retry")
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .background(Color.theme.primary)
+                            .cornerRadius(10)
+                    }
+                    .padding(.top, 8)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
             } else if viewModel.donations.isEmpty {
                 // Empty State
                 VStack(spacing: 16) {
@@ -204,6 +239,19 @@ struct DonorLogView: View {
 // Custom log row card view
 struct DonationLogCard: View {
     let donation: Donation
+    
+    var statusColor: Color {
+        switch donation.status.lowercased() {
+        case "completed":
+            return .green
+        case "pending", "initiated":
+            return .orange
+        case "failed":
+            return .red
+        default:
+            return .secondary
+        }
+    }
     
     // Generate initials for the avatar
     var initials: String {
@@ -279,10 +327,10 @@ struct DonationLogCard: View {
                 
                 Text(donation.status.uppercased())
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.green)
+                    .foregroundColor(statusColor)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
-                    .background(Color.green.opacity(0.12))
+                    .background(statusColor.opacity(0.12))
                     .cornerRadius(4)
             }
         }

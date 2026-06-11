@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import Supabase
 
 @MainActor
@@ -22,7 +23,7 @@ class AuthService: ObservableObject {
     }
     
     func signIn(email: String, password: String) async throws {
-        _ = try await client.auth.signInWithPassword(email: email, password: password)
+        _ = try await client.auth.signIn(email: email, password: password)
     }
     
     func signOut() async throws {

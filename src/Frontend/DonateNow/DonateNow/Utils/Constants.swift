@@ -2,9 +2,25 @@ import Foundation
 
 enum Constants {
     static var supabaseURL: URL {
-        guard let urlString = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String,
-              let url = URL(string: urlString) else {
-            fatalError("SUPABASE_URL missing or invalid in Info.plist")
+        guard var urlString = Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String else {
+            fatalError("SUPABASE_URL missing in Info.plist")
+        }
+        
+        // Trim whitespaces
+        urlString = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // If Xcode stripped out the '//' and the rest of the line as a comment,
+        // the string might literally just be 'https:' or 'https:/'
+        if urlString == "https:" || urlString == "https:/" || urlString.isEmpty {
+            urlString = "https://gqubhatlrjfcxrrywsjr.supabase.co"
+        } else if urlString.contains("https:") && !urlString.contains("https://") {
+            urlString = urlString.replacingOccurrences(of: "https:", with: "https://")
+        } else if !urlString.contains("://") {
+            urlString = "https://" + urlString
+        }
+        
+        guard let url = URL(string: urlString) else {
+            fatalError("SUPABASE_URL invalid: \(urlString)")
         }
         return url
     }

@@ -203,7 +203,7 @@ struct DonationView: View {
         }
         .navigationDestination(isPresented: $viewModel.isThankYouActive) {
             if let result = viewModel.verificationResult {
-                ThankYouView(donationId: result.donation_id, amount: viewModel.finalAmount)
+                ThankYouView(donationId: result.donation_id, amount: viewModel.completedAmount)
             }
         }
     }

@@ -34,4 +34,38 @@ struct Donation: Identifiable, Codable {
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.causeId = try container.decodeIfPresent(UUID.self, forKey: .causeId)
+        self.donorName = try container.decode(String.self, forKey: .donorName)
+        self.donorEmail = try container.decode(String.self, forKey: .donorEmail)
+        self.donorPhone = try container.decodeIfPresent(String.self, forKey: .donorPhone)
+        self.currency = try container.decode(String.self, forKey: .currency)
+        self.status = try container.decode(String.self, forKey: .status)
+        self.razorpayOrderId = try container.decodeIfPresent(String.self, forKey: .razorpayOrderId)
+        self.razorpayPaymentId = try container.decodeIfPresent(String.self, forKey: .razorpayPaymentId)
+        self.razorpaySignature = try container.decodeIfPresent(String.self, forKey: .razorpaySignature)
+        self.paymentMethod = try container.decodeIfPresent(String.self, forKey: .paymentMethod)
+        self.notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        
+        // Handle decimal mapping from either JSON numeric double or string
+        if let doubleAmount = try? container.decode(Double.self, forKey: .amount) {
+            self.amount = doubleAmount
+        } else if let stringAmount = try? container.decode(String.self, forKey: .amount),
+                  let parsedAmount = Double(stringAmount) {
+            self.amount = parsedAmount
+        } else {
+            throw DecodingError.typeMismatch(
+                Double.self,
+                DecodingError.Context(
+                    codingPath: container.codingPath + [CodingKeys.amount],
+                    debugDescription: "Expected Double or decimal-representable String for amount"
+                )
+            )
+        }
+    }
 }

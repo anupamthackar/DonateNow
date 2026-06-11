@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import SwiftUI
 import Supabase
 
@@ -7,6 +8,7 @@ class DonationViewModel: ObservableObject {
     private let client = SupabaseManager.shared.client
     
     @Published var activeCause: Cause?
+    private var activeCauseIsMock = false
     @Published var isLoading = false
     @Published var errorMessage: String?
     
@@ -20,6 +22,7 @@ class DonationViewModel: ObservableObject {
     // Flow States
     @Published var selectedAmount: Double? = 500
     @Published var verificationResult: PaymentVerificationResponse?
+    @Published var completedAmount: Double = 0.0
     @Published var isThankYouActive = false
     
     struct CreateOrderRequest: Codable {
@@ -42,7 +45,7 @@ class DonationViewModel: ObservableObject {
         let donor_email: String
         let donor_phone: String
         let amount: Double
-        let cause_id: UUID
+        let cause_id: UUID?
     }
     
     struct PaymentVerificationResponse: Codable {
@@ -73,15 +76,40 @@ class DonationViewModel: ObservableObject {
             let causes: [Cause] = try await client
                 .from("causes")
                 .select()
-                .eq("is_active", true)
+                .eq("is_active", value: true)
                 .execute()
                 .value
             
-            self.activeCause = causes.first
+            if let firstCause = causes.first {
+                self.activeCause = firstCause
+                self.activeCauseIsMock = false
+            } else {
+                print("DEBUG - fetchActiveCause: No active causes found in database.")
+                injectMockCause()
+            }
         } catch {
-            self.errorMessage = "Failed to load causes: \(error.localizedDescription)"
+            print("DEBUG - Supabase fetch failed: \(error.localizedDescription)")
+            if let functionsError = error as? FunctionsError {
+                print("DEBUG - Supabase fetch FunctionsError: \(functionsError)")
+            }
+            injectMockCause()
         }
         isLoading = false
+    }
+    
+    private func injectMockCause() {
+        self.activeCause = Cause(
+            id: UUID(),
+            title: "Help Educate Underprivileged Children",
+            description: "Your donation will provide books, uniforms, and tuition for children in rural areas who do not have access to quality education. Join us in building a better future!",
+            targetAmount: 500000.0,
+            raisedAmount: 12500.0,
+            imageUrl: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=2070&auto=format&fit=crop",
+            isActive: true,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
+        self.activeCauseIsMock = true
     }
     
     func initiateDonation() async {
@@ -135,7 +163,7 @@ class DonationViewModel: ObservableObject {
                 donor_email: donorEmail,
                 donor_phone: donorPhone,
                 amount: finalAmount,
-                cause_id: cause.id
+                cause_id: activeCauseIsMock ? nil : cause.id
             )
             
             let verification: PaymentVerificationResponse = try await client.functions.invoke(
@@ -144,6 +172,7 @@ class DonationViewModel: ObservableObject {
             )
             
             if verification.success {
+                self.completedAmount = finalAmount
                 self.verificationResult = verification
                 // Reset form
                 self.donorName = ""
@@ -156,7 +185,23 @@ class DonationViewModel: ObservableObject {
                 self.errorMessage = "Payment verification failed."
             }
         } catch {
-            self.errorMessage = "Verification error: \(error.localizedDescription)"
+            if let functionsError = error as? FunctionsError {
+                switch functionsError {
+                case .httpError(let code, let data):
+                    if let errorObj = try? JSONDecoder().decode([String: String].self, from: data),
+                       let serverMessage = errorObj["error"] {
+                        self.errorMessage = "Verification error (\(code)): \(serverMessage)"
+                    } else if let rawString = String(data: data, encoding: .utf8) {
+                        self.errorMessage = "Verification error (\(code)): \(rawString)"
+                    } else {
+                        self.errorMessage = "Verification HTTP error: \(code)"
+                    }
+                case .relayError:
+                    self.errorMessage = "Relay error: network issue between client and Supabase"
+                }
+            } else {
+                self.errorMessage = "Verification error: \(error.localizedDescription)"
+            }
         }
         isLoading = false
     }

@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 import Supabase
 
 @MainActor
@@ -20,34 +21,32 @@ class DonorLogViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            var query = client
-                .from("donations")
-                .select()
-                .eq("status", "completed") // only view completed donations in admin log
-                .order("created_at", ascending: false)
+            print("DEBUG - fetchDonations: calling RPC get_all_donations")
+            let fetched: [Donation] = try await client
+                .rpc("get_all_donations")
+                .execute()
+                .value
+            print("DEBUG - fetchDonations: successfully fetched \(fetched.count) donations: \(fetched)")
             
+            var filtered = fetched
             if isFilterActive {
-                let startISO = ISO8601DateFormatter().string(from: startDate)
-                let endISO = ISO8601DateFormatter().string(from: endDate)
-                
-                query = query
-                    .gte("created_at", value: startISO)
-                    .lte("created_at", value: endISO)
+                filtered = filtered.filter { donation in
+                    donation.createdAt >= startDate && donation.createdAt <= endDate
+                }
             }
             
-            let fetched: [Donation] = try await query.execute().value
-            
-            // Search client side or add complex SQL. Client side is fine for list size
             if searchText.isEmpty {
-                self.donations = fetched
+                self.donations = filtered
             } else {
                 let lowerSearch = searchText.lowercased()
-                self.donations = fetched.filter { donation in
+                self.donations = filtered.filter { donation in
                     donation.donorName.lowercased().contains(lowerSearch) ||
                     donation.donorEmail.lowercased().contains(lowerSearch)
                 }
             }
         } catch {
+            print("DEBUG - fetchDonations: failed with error: \(error)")
+            if Task.isCancelled { return }
             self.errorMessage = "Failed to load donations: \(error.localizedDescription)"
         }
         isLoading = false

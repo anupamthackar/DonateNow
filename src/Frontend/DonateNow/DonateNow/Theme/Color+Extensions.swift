@@ -5,9 +5,10 @@ extension Color {
 }
 
 struct ColorTheme {
-    let primary = Color("PrimaryColor")
-    let primaryActive = Color("PrimaryActiveColor")
-    let border = Color("BorderColor")
+    // Using built-in hex converter as a robust fallback to avoid Asset Catalog crashes
+    let primary = ColorTheme.hex("#16a34a")
+    let primaryActive = ColorTheme.hex("#15803d")
+    let border = ColorTheme.hex("#e5e7eb")
     
     // We can also define fallback colors if Assets are not fully configured yet
     static func hex(_ hex: String) -> Color {

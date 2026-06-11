@@ -56,7 +56,7 @@ serve(async (req) => {
         donor_email,
         donor_phone,
         amount,
-        status: 'pending', // will be updated to completed by webhook
+        status: 'completed', // set to completed immediately upon signature verification
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature
