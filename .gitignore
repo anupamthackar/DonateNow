@@ -21,6 +21,7 @@ src/supabase/.temp
 .env.production.local
 .env.keys
 *.pem
+Config.xcconfig
 
 # Dependencies
 node_modules/
