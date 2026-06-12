@@ -1,0 +1,361 @@
+# System Architecture — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Previous Version: [v1.0 Architecture](../../v1.0/Extended/architecture.mdc)
+> Reference: [PRD.mdc](../Context/PRD.mdc) | [Personas.mdc](../Context/Personas.mdc)
+
+---
+
+## 1. Architecture Evolution
+
+### Before v2.0 (Single Cause)
+
+```
+┌──────────────────────────────────┐
+│           iOS App                │
+│  ┌────────┐  ┌──────────┐       │
+│  │ Donate  │  │  Admin   │       │
+│  │  View   │  │  Views   │       │
+│  └────┬───┘  └────┬─────┘       │
+│       └──────┬─────┘             │
+│         ViewModels               │
+│         Repositories             │
+└──────────────┬───────────────────┘
+               │
+    ┌──────────┼──────────┐
+    │          │          │
+┌───▼───┐ ┌───▼───┐ ┌───▼───┐
+│Razorpay│ │Supabase│ │Supabase│
+│iOS SDK │ │  Auth  │ │  DB   │
+└───┬───┘ └───────┘ └───▲───┘
+    │                     │
+    │    ┌───────────┐    │
+    └───►│Edge Funcs │────┘
+         │(3 funcs)  │
+         └───────────┘
+```
+
+### After v2.0 (Multi-Cause Platform)
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                              iOS App                                  │
+│                                                                       │
+│  ┌────────────┐  ┌──────────────┐  ┌───────────┐  ┌──────────────┐  │
+│  │ Marketplace│  │  Campaign    │  │  Creator   │  │    Admin     │  │
+│  │   Views    │  │  Creation    │  │ Dashboard  │  │   Views      │  │
+│  └─────┬──────┘  └──────┬──────┘  └─────┬──────┘  └──────┬──────┘  │
+│        └─────────────────┼───────────────┼─────────────────┘         │
+│                     ViewModels Layer                                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │Marketplace│ │Campaign  │ │Dashboard │ │Admin     │ │Donation  │  │
+│  │ViewModel │ │ViewModel │ │ViewModel │ │ViewModel │ │ViewModel │  │
+│  └─────┬────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
+│        └────────────┼───────────┼─────────────┼────────────┘         │
+│                  Services & Repositories Layer                        │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │Campaign  │ │Payment   │ │Receipt   │ │Subscript │ │Verificat │  │
+│  │Repository│ │Service   │ │Service   │ │Service   │ │Repository│  │
+│  └─────┬────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │
+│  │Search    │ │Upload    │ │Analytics │ │Report    │ │Notificat │  │
+│  │Service   │ │Service   │ │Service   │ │Service   │ │Service   │  │
+│  └─────┬────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘  │
+└────────┼───────────┼────────────┼────────────┼────────────┼──────────┘
+         │           │            │            │            │
+    ┌────┴───────────┴────────────┴────────────┴────────────┘
+    │
+    ├──► Supabase Auth (email/password, role-based)
+    ├──► Supabase Database (PostgreSQL, RLS)
+    ├──► Supabase Storage (documents, receipts)
+    ├──► Razorpay iOS SDK (one-time payments)
+    │
+    │    ┌────────────────────────────────────────────┐
+    └───►│         Supabase Edge Functions            │
+         │                                            │
+         │  ┌────────────┐  ┌────────────────────┐   │
+         │  │v1.0 Funcs  │  │v2.0 New Functions  │   │
+         │  │            │  │                    │   │
+         │  │create-order│  │create-subscription │   │
+         │  │verify-pay  │  │cancel-subscription │   │
+         │  │webhook     │  │generate-receipt    │   │
+         │  │            │  │generate-impact-rpt │   │
+         │  │            │  │subscription-webhook│   │
+         │  └────────────┘  └────────────────────┘   │
+         │                                            │
+         │  External APIs:                            │
+         │  ├──► Razorpay Orders API                  │
+         │  ├──► Razorpay Subscriptions API            │
+         │  └──► LLM API (AI Reports)                 │
+         └────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Tech Stack Mapping (v2.0)
+
+| Layer | Technology | Purpose | New in v2.0 |
+|---|---|---|---|
+| UI / Presentation | SwiftUI | Declarative native UI | Enhanced views |
+| Business Logic | Swift ViewModels | State, validation, orchestration | New ViewModels |
+| Navigation | NavigationStack + TabView | Routing | Role-based tabs |
+| Data Models | Swift Codable Structs | Typed data structures | New models |
+| Backend Services | supabase-swift SDK | DB queries, Auth | New operations |
+| Secure Logic | Supabase Edge Functions (Deno) | Server-side processing | 5 new functions |
+| Payments (One-time) | Razorpay iOS SDK | Payment sheet | Same as v1.0 |
+| Payments (Recurring) | Razorpay Subscriptions API | Monthly plans | ✅ New |
+| File Storage | Supabase Storage | Documents, receipts | ✅ New |
+| PDF Generation | Deno PDF library | 80G receipt PDFs | ✅ New |
+| AI Integration | LLM API | Impact reports | ✅ New |
+| Image Loading | AsyncImage | Campaign images | ✅ New |
+| PDF Display | PDFKit | Receipt viewing | ✅ New |
+| Dependency Mgt | Swift Package Manager | SDK versions | Same as v1.0 |
+
+---
+
+## 3. Xcode Project Structure (v2.0)
+
+```
+DonateNow/
+├── DonateNowApp.swift                    ← App entry, environment, role routing
+├── Configuration/
+│   ├── Config.xcconfig                   ← API keys, environment URLs
+│   └── Info.plist
+│
+├── Models/                               ← Codable Structs
+│   ├── Cause.swift                       ← v1.0 (preserved)
+│   ├── Donation.swift                    ← v1.0 (extended)
+│   ├── DonationProfile.swift            ← NEW: Campaign model
+│   ├── User.swift                        ← NEW: Platform user
+│   ├── VerificationRequest.swift        ← NEW: Verification model
+│   ├── TaxReceipt.swift                 ← NEW: Receipt model
+│   ├── Subscription.swift               ← NEW: Subscription model
+│   ├── ImpactReport.swift               ← NEW: AI report model
+│   ├── PaymentLog.swift                 ← NEW: Payment log model
+│   ├── CampaignProgress.swift           ← NEW: Progress model
+│   └── APIError.swift                    ← Extended error types
+│
+├── Views/
+│   ├── Public/                           ← Donor-facing views
+│   │   ├── DonationView.swift           ← v1.0 (enhanced for multi-campaign)
+│   │   └── ThankYouView.swift           ← v1.0 (enhanced with receipt CTA)
+│   │
+│   ├── Marketplace/                     ← NEW: Campaign discovery
+│   │   ├── MarketplaceView.swift        ← Campaign grid with search
+│   │   ├── CampaignDetailView.swift     ← Full campaign page
+│   │   └── CampaignCardView.swift       ← Campaign card component
+│   │
+│   ├── Campaign/                         ← NEW: Creator views
+│   │   ├── CreateCampaignView.swift     ← Multi-step creation form
+│   │   ├── EditCampaignView.swift       ← Edit existing campaign
+│   │   ├── MyCampaignsView.swift        ← Creator's campaign list
+│   │   ├── DocumentUploadView.swift     ← Document upload UI
+│   │   └── VerificationStatusView.swift ← Verification progress
+│   │
+│   ├── Dashboard/                        ← NEW: Creator dashboard
+│   │   ├── CreatorDashboardView.swift   ← Stats overview
+│   │   ├── CampaignDonationLogView.swift← Per-campaign donations
+│   │   └── DashboardStatsCard.swift     ← Stats card component
+│   │
+│   ├── Receipt/                          ← NEW: Tax receipt views
+│   │   ├── ReceiptListView.swift        ← Receipt history
+│   │   └── ReceiptDetailView.swift      ← PDF viewer + share
+│   │
+│   ├── Subscription/                    ← NEW: Subscription views
+│   │   ├── SubscriptionSetupView.swift  ← Monthly setup flow
+│   │   └── SubscriptionManageView.swift ← View/cancel subscriptions
+│   │
+│   ├── Report/                           ← NEW: AI report views
+│   │   └── ImpactReportView.swift       ← Report display
+│   │
+│   ├── Admin/                            ← Admin views (extended)
+│   │   ├── AdminLoginView.swift         ← v1.0 (preserved)
+│   │   ├── AdminDashboardView.swift     ← v1.0 (enhanced)
+│   │   ├── DonorLogView.swift           ← v1.0 (enhanced)
+│   │   ├── AdminVerificationQueue.swift ← NEW: Pending review queue
+│   │   └── CampaignReviewView.swift     ← NEW: Campaign review detail
+│   │
+│   └── Components/                       ← Reusable components
+│       ├── CauseCardView.swift          ← v1.0
+│       ├── CustomTextField.swift        ← v1.0
+│       ├── LoadingStateView.swift       ← v1.0
+│       ├── CampaignProgressBar.swift    ← NEW: Progress bar
+│       ├── DonorWallView.swift          ← NEW: Donor wall
+│       ├── SearchBar.swift              ← NEW: Search input
+│       └── EmptyStateView.swift         ← NEW: Empty states
+│
+├── ViewModels/                           ← Logic & State
+│   ├── DonationViewModel.swift          ← v1.0 (enhanced)
+│   ├── AdminAuthViewModel.swift         ← v1.0 (enhanced with roles)
+│   ├── DashboardViewModel.swift         ← v1.0 (enhanced)
+│   ├── MarketplaceViewModel.swift       ← NEW
+│   ├── CampaignDetailViewModel.swift    ← NEW
+│   ├── CreateCampaignViewModel.swift    ← NEW
+│   ├── CreatorDashboardViewModel.swift  ← NEW
+│   ├── VerificationViewModel.swift      ← NEW
+│   ├── ReceiptViewModel.swift           ← NEW
+│   ├── SubscriptionViewModel.swift      ← NEW
+│   └── ImpactReportViewModel.swift      ← NEW
+│
+├── Services/                             ← External Interactions
+│   ├── SupabaseManager.swift            ← v1.0 (preserved)
+│   ├── PaymentService.swift             ← v1.0 (preserved)
+│   ├── Repositories/
+│   │   ├── CauseRepository.swift        ← v1.0 (preserved)
+│   │   ├── DonationRepository.swift     ← v1.0 (enhanced)
+│   │   ├── CampaignRepository.swift     ← NEW
+│   │   └── VerificationRepository.swift ← NEW
+│   └── Services/
+│       ├── AuthService.swift            ← v1.0 (enhanced with roles)
+│       ├── CampaignSearchService.swift  ← NEW
+│       ├── ReceiptService.swift         ← NEW
+│       ├── SubscriptionService.swift    ← NEW
+│       ├── ImpactReportService.swift    ← NEW
+│       ├── FileUploadService.swift      ← NEW
+│       ├── AnalyticsService.swift       ← NEW
+│       └── NotificationService.swift    ← NEW
+│
+├── Utils/                                ← Helpers
+│   ├── Constants.swift                  ← v1.0 (extended)
+│   ├── Formatters.swift                 ← v1.0 (extended)
+│   └── Validators.swift                 ← v1.0 (extended)
+│
+└── Theme/                                ← UI styling
+    ├── Color+Extensions.swift           ← v1.0
+    ├── Typography.swift                 ← v1.0
+    └── ViewModifiers.swift              ← v1.0 (extended)
+
+supabase/                                 ← Backend code
+├── functions/
+│   ├── create-order/index.ts            ← v1.0 (preserved)
+│   ├── verify-payment/index.ts          ← v1.0 (modified — triggers receipt)
+│   ├── razorpay-webhook/index.ts        ← v1.0 (preserved)
+│   ├── create-subscription/index.ts     ← NEW
+│   ├── cancel-subscription/index.ts     ← NEW
+│   ├── generate-receipt/index.ts        ← NEW
+│   ├── generate-impact-report/index.ts  ← NEW
+│   └── subscription-webhook/index.ts    ← NEW
+├── migrations/
+│   ├── 001_schema.sql                   ← v1.0
+│   ├── 002_security.sql                ← v1.0
+│   ├── 003_functions.sql               ← v1.0
+│   ├── 004_seed.sql                    ← v1.0
+│   ├── 005_v2_schema.sql              ← NEW: v2.0 tables
+│   ├── 006_v2_security.sql            ← NEW: v2.0 RLS
+│   ├── 007_v2_functions.sql           ← NEW: v2.0 SQL functions
+│   ├── 008_v2_migration.sql           ← NEW: Data migration
+│   ├── 009_v2_seed.sql                ← NEW: Test data
+│   └── 010_v2_storage.sql            ← NEW: Storage buckets
+└── storage/
+    ├── documents/                       ← NEW: Verification documents
+    └── receipts/                        ← NEW: Generated PDFs
+```
+
+---
+
+## 4. Navigation Architecture (v2.0)
+
+```
+App Entry (DonateNowApp.swift)
+   │
+   ├── if Anonymous / Donor
+   │      └── TabView
+   │             ├── Tab 1: NavigationStack { MarketplaceView → CampaignDetailView → DonationView → ThankYouView }
+   │             ├── Tab 2: NavigationStack { DonationHistoryView → ReceiptDetailView }
+   │             └── Tab 3: ProfileView / LoginView
+   │
+   ├── if Creator
+   │      └── TabView
+   │             ├── Tab 1: NavigationStack { MarketplaceView → CampaignDetailView → DonationView → ThankYouView }
+   │             ├── Tab 2: NavigationStack { MyCampaignsView → CreateCampaignView / EditCampaignView }
+   │             ├── Tab 3: NavigationStack { CreatorDashboardView → CampaignDonationLogView / ImpactReportView }
+   │             └── Tab 4: ProfileView (+ SubscriptionManageView / ReceiptListView)
+   │
+   └── if Admin
+          └── TabView
+                 ├── Tab 1: NavigationStack { MarketplaceView → CampaignDetailView }
+                 ├── Tab 2: NavigationStack { AdminVerificationQueue → CampaignReviewView }
+                 ├── Tab 3: NavigationStack { AdminDashboardView → DonorLogView }
+                 └── Tab 4: ProfileView
+```
+
+---
+
+## 5. Data Flow Architecture
+
+### Donation Flow (v2.0)
+```
+MarketplaceView                    Edge Functions                    Database
+     │                                  │                               │
+     │ 1. Select Campaign               │                               │
+     ├──► CampaignDetailView            │                               │
+     │                                  │                               │
+     │ 2. Tap "Donate"                  │                               │
+     ├──► DonationView                  │                               │
+     │                                  │                               │
+     │ 3. Submit donation               │                               │
+     ├────────────────────────────────► create-order ──────────────────► Razorpay API
+     │                                  │ ◄─────────── order_id         │
+     │ ◄────────────────────────────────┤                               │
+     │                                  │                               │
+     │ 4. Razorpay payment              │                               │
+     ├────────────────────────────────► verify-payment ────────────────► INSERT donation
+     │                                  │ ──────────────────────────────► UPDATE raised_amount
+     │                                  │ ──────────────────────────────► generate-receipt
+     │                                  │                               │ INSERT tax_receipt
+     │                                  │                               │ STORE PDF
+     │ ◄────────────────────────────────┤                               │
+     │ 5. Thank You + Receipt           │                               │
+     └──► ThankYouView                  │                               │
+```
+
+### Campaign Creation Flow
+```
+CreateCampaignView                 Supabase SDK                      Database
+     │                                  │                               │
+     │ 1. Fill form                     │                               │
+     │ 2. Upload documents              │                               │
+     ├────────────────────────────────► Storage.upload ────────────────► documents/
+     │                                  │                               │
+     │ 3. Submit campaign               │                               │
+     ├────────────────────────────────► donation_profiles.insert ──────► INSERT campaign
+     │                                  │                               │ (status: draft)
+     │                                  │                               │
+     │ 4. Submit for verification       │                               │
+     ├────────────────────────────────► verification_requests.insert ──► INSERT request
+     │                                  │                               │ (status: pending)
+     │                                  │                               │
+     │ 5. Status updated                │                               │
+     └──► VerificationStatusView        │                               │
+```
+
+---
+
+## 6. Security Architecture (v2.0)
+
+1. **Client-Side (iOS)**: Only safe keys — `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `RAZORPAY_KEY_ID`
+2. **Edge Function Secrets**: `RAZORPAY_KEY_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `LLM_API_KEY`
+3. **Database RLS**: Role-based policies on all tables (per [User_Roles_and_Access_Control.mdc](../Context/User_Roles_and_Access_Control.mdc))
+4. **File Storage**: Private buckets for documents; read-only for receipts (donor's own)
+5. **Session**: JWT stored in iOS Keychain; role checked against `users` table
+6. **File Upload**: Server-side type/size validation; no executables allowed
+
+---
+
+## 7. Build & Deployment Architecture
+
+| Environment | Purpose | Infrastructure |
+|---|---|---|
+| Development | Local development | Xcode Simulator (iPhone + iPad) |
+| Backend Dev | Edge Function development | Supabase CLI (`supabase functions serve`) |
+| Staging | Integration testing | Supabase project (staging) |
+| Production | Live platform | Supabase project (production) |
+| Distribution | App delivery | TestFlight / App Store (requires dev account) |
+
+### Deployment Sequence
+1. Run migration scripts on staging database
+2. Deploy new Edge Functions via `supabase functions deploy`
+3. Configure Storage buckets
+4. Build and test iOS app on Simulator
+5. Validate migration with test data
+6. Promote to production (when ready)

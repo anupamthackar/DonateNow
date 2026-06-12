@@ -1,0 +1,265 @@
+# User Roles and Access Control — DonateNow v2.0
+
+> Purpose: Define role-based access control (RBAC) for the multi-cause donation platform.
+> Reference: [PRD.mdc](./PRD.mdc) | [Personas.mdc](./Personas.mdc) | [Database_Changes.mdc](../Architecture/Database_Changes.mdc)
+
+---
+
+## 1. Role Definitions
+
+### Role 1: Donor (Anonymous)
+- **Description**: Unregistered user who browses campaigns and makes one-time donations.
+- **Auth Level**: No authentication required.
+- **Access**: Read-only on public campaign data.
+
+### Role 2: Donor (Registered)
+- **Description**: Registered user who donates, tracks history, downloads receipts, and manages subscriptions.
+- **Auth Level**: Supabase Auth (email/password).
+- **User Table Role**: `role = 'donor'`
+
+### Role 3: Campaign Creator
+- **Description**: Registered user who creates fundraising campaigns, submits verification, and manages donations.
+- **Auth Level**: Supabase Auth (email/password).
+- **User Table Role**: `role = 'creator'`
+
+### Role 4: Admin
+- **Description**: Platform administrator who verifies campaigns, monitors transactions, and manages the platform.
+- **Auth Level**: Supabase Auth (email/password) + `role = 'admin'` in users table.
+- **User Table Role**: `role = 'admin'`
+
+---
+
+## 2. Permission Matrix
+
+### Marketplace & Discovery
+
+| Action | Anonymous Donor | Registered Donor | Creator | Admin |
+|---|---|---|---|---|
+| Browse verified campaigns | ✅ | ✅ | ✅ | ✅ |
+| Search/filter campaigns | ✅ | ✅ | ✅ | ✅ |
+| View campaign details | ✅ | ✅ | ✅ | ✅ |
+| View campaign progress bar | ✅ | ✅ | ✅ | ✅ |
+| View donor wall | ✅ | ✅ | ✅ | ✅ |
+
+### Donations
+
+| Action | Anonymous Donor | Registered Donor | Creator | Admin |
+|---|---|---|---|---|
+| Make one-time donation | ✅ | ✅ | ✅ | ❌ |
+| Setup recurring donation | ❌ | ✅ | ✅ | ❌ |
+| Cancel subscription | ❌ | ✅ (own) | ✅ (own) | ❌ |
+| View donation history | ❌ | ✅ (own) | ✅ (own) | ✅ (all) |
+| Download tax receipt | ❌ | ✅ (own) | ✅ (own) | ❌ |
+| Choose anonymous donation | ✅ | ✅ | ✅ | ❌ |
+
+### Campaign Management
+
+| Action | Anonymous Donor | Registered Donor | Creator | Admin |
+|---|---|---|---|---|
+| Create campaign | ❌ | ❌ | ✅ | ❌ |
+| Edit own campaign | ❌ | ❌ | ✅ (own) | ❌ |
+| Delete/deactivate own campaign | ❌ | ❌ | ✅ (own) | ✅ (any) |
+| Upload verification documents | ❌ | ❌ | ✅ | ❌ |
+| Submit for verification | ❌ | ❌ | ✅ | ❌ |
+| View own campaign stats | ❌ | ❌ | ✅ (own) | ✅ (all) |
+| View campaign donation log | ❌ | ❌ | ✅ (own) | ✅ (all) |
+| Generate AI impact report | ❌ | ❌ | ✅ (own, verified) | ✅ (any) |
+
+### Verification & Administration
+
+| Action | Anonymous Donor | Registered Donor | Creator | Admin |
+|---|---|---|---|---|
+| View verification queue | ❌ | ❌ | ❌ | ✅ |
+| Review campaign documents | ❌ | ❌ | ❌ | ✅ |
+| Approve campaign | ❌ | ❌ | ❌ | ✅ |
+| Reject campaign (with reason) | ❌ | ❌ | ❌ | ✅ |
+| View own verification status | ❌ | ❌ | ✅ (own) | ✅ (all) |
+| View platform analytics | ❌ | ❌ | ❌ | ✅ |
+| Manage users | ❌ | ❌ | ❌ | ✅ |
+
+---
+
+## 3. RLS Policy Mapping
+
+### `users` Table
+
+```sql
+-- Users can read their own profile
+CREATE POLICY "users_select_own" ON users
+  FOR SELECT USING (auth.uid() = supabase_auth_id);
+
+-- Users can update their own profile
+CREATE POLICY "users_update_own" ON users
+  FOR UPDATE USING (auth.uid() = supabase_auth_id);
+
+-- Admin can read all users
+CREATE POLICY "users_select_admin" ON users
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM users WHERE supabase_auth_id = auth.uid() AND role = 'admin')
+  );
+```
+
+### `donation_profiles` Table
+
+```sql
+-- Public: Anyone can read verified, active campaigns
+CREATE POLICY "profiles_select_public" ON donation_profiles
+  FOR SELECT USING (verification_status = 'verified' AND is_active = true);
+
+-- Creator: Can read all own campaigns (any status)
+CREATE POLICY "profiles_select_creator" ON donation_profiles
+  FOR SELECT USING (creator_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()));
+
+-- Creator: Can insert new campaigns
+CREATE POLICY "profiles_insert_creator" ON donation_profiles
+  FOR INSERT WITH CHECK (creator_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()));
+
+-- Creator: Can update own campaigns
+CREATE POLICY "profiles_update_creator" ON donation_profiles
+  FOR UPDATE USING (creator_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()));
+
+-- Admin: Can read all campaigns
+CREATE POLICY "profiles_select_admin" ON donation_profiles
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM users WHERE supabase_auth_id = auth.uid() AND role = 'admin')
+  );
+
+-- Admin: Can update any campaign (for verification)
+CREATE POLICY "profiles_update_admin" ON donation_profiles
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM users WHERE supabase_auth_id = auth.uid() AND role = 'admin')
+  );
+```
+
+### `donations` Table
+
+```sql
+-- Public: Donor wall query (non-anonymous, completed donations — name and amount only)
+CREATE POLICY "donations_select_public_wall" ON donations
+  FOR SELECT USING (status = 'completed' AND is_anonymous = false);
+
+-- Registered Donor: Can view own donations
+CREATE POLICY "donations_select_donor" ON donations
+  FOR SELECT USING (donor_user_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()));
+
+-- Creator: Can view donations to own campaigns
+CREATE POLICY "donations_select_creator" ON donations
+  FOR SELECT USING (
+    campaign_id IN (SELECT id FROM donation_profiles WHERE creator_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()))
+  );
+
+-- Admin: Can view all donations
+CREATE POLICY "donations_select_admin" ON donations
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM users WHERE supabase_auth_id = auth.uid() AND role = 'admin')
+  );
+
+-- INSERT: Only via Edge Functions (service_role), not direct client
+```
+
+### `verification_requests` Table
+
+```sql
+-- Creator: Can view own verification requests
+CREATE POLICY "verification_select_creator" ON verification_requests
+  FOR SELECT USING (
+    campaign_id IN (SELECT id FROM donation_profiles WHERE creator_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()))
+  );
+
+-- Creator: Can insert verification requests for own campaigns
+CREATE POLICY "verification_insert_creator" ON verification_requests
+  FOR INSERT WITH CHECK (
+    campaign_id IN (SELECT id FROM donation_profiles WHERE creator_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()))
+  );
+
+-- Admin: Can view all verification requests
+CREATE POLICY "verification_select_admin" ON verification_requests
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM users WHERE supabase_auth_id = auth.uid() AND role = 'admin')
+  );
+
+-- Admin: Can update verification requests (approve/reject)
+CREATE POLICY "verification_update_admin" ON verification_requests
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM users WHERE supabase_auth_id = auth.uid() AND role = 'admin')
+  );
+```
+
+### `tax_receipts` Table
+
+```sql
+-- Donor: Can view own receipts
+CREATE POLICY "receipts_select_donor" ON tax_receipts
+  FOR SELECT USING (
+    donation_id IN (SELECT id FROM donations WHERE donor_user_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()))
+  );
+
+-- INSERT: Only via Edge Functions (service_role)
+```
+
+### `subscriptions` Table
+
+```sql
+-- User: Can view own subscriptions
+CREATE POLICY "subscriptions_select_own" ON subscriptions
+  FOR SELECT USING (user_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()));
+
+-- User: Can update own subscriptions (cancel)
+CREATE POLICY "subscriptions_update_own" ON subscriptions
+  FOR UPDATE USING (user_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()));
+
+-- INSERT/DELETE: Only via Edge Functions (service_role)
+```
+
+### `impact_reports` Table
+
+```sql
+-- Creator: Can view reports for own campaigns
+CREATE POLICY "reports_select_creator" ON impact_reports
+  FOR SELECT USING (
+    campaign_id IN (SELECT id FROM donation_profiles WHERE creator_id IN (SELECT id FROM users WHERE supabase_auth_id = auth.uid()))
+  );
+
+-- Admin: Can view all reports
+CREATE POLICY "reports_select_admin" ON impact_reports
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM users WHERE supabase_auth_id = auth.uid() AND role = 'admin')
+  );
+
+-- INSERT: Only via Edge Functions (service_role)
+```
+
+---
+
+## 4. Role Transition Rules
+
+| From | To | Condition | Process |
+|---|---|---|---|
+| Anonymous Donor | Registered Donor | User creates account | Self-service registration |
+| Registered Donor | Campaign Creator | User creates first campaign | Automatic role upgrade on campaign creation |
+| Campaign Creator | Campaign Creator | Always — cannot be downgraded | Permanent after first campaign |
+| Any User | Admin | Manual assignment | Platform owner assigns via Supabase Dashboard |
+
+---
+
+## 5. Session & Authentication
+
+| Aspect | Implementation |
+|---|---|
+| Auth Provider | Supabase Auth (email/password) |
+| Session Storage | iOS Keychain (via Supabase Swift SDK) |
+| Session Duration | Until explicit logout |
+| Token Refresh | Automatic by Supabase SDK |
+| Role Check | Query `users` table for `role` column |
+| Admin Check | `users.role = 'admin'` AND valid Supabase session |
+
+---
+
+## 6. Security Principles
+
+1. **Principle of Least Privilege**: Each role has the minimum permissions needed.
+2. **Defense in Depth**: RLS + application-level checks + Edge Function validation.
+3. **Data Isolation**: Users cannot access other users' data.
+4. **Admin Privilege Escalation Protection**: Admin role assigned only via backend.
+5. **Immutable Financial Records**: No user role can modify completed donation records.
+6. **Audit Trail**: All verification decisions logged with admin ID and timestamp.

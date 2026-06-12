@@ -1,0 +1,311 @@
+# Project Scope — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Previous Version: [v1.0 Project Scope](../../v1.0/Project_Scope.md)
+> Phase: 05 — Scope Definition
+> Previous: [Personas.mdc](./Personas.mdc)
+> Next: [Project_Boundaries.mdc](./Project_Boundaries.mdc)
+
+---
+
+## Executive Summary
+
+DonateNow v2.0 transforms the platform from a **single-cause donation app** into a **multi-cause donation marketplace**. The platform will support user-created campaigns, a campaign discovery marketplace, admin verification workflows, 80G tax receipt generation, recurring donations, AI-powered impact reports, and campaign management dashboards.
+
+**Scope**: Multi-cause platform — user-created campaigns, marketplace discovery, verification workflow, tax receipts, recurring donations, AI reports, creator dashboards. Native iOS (iPhone + iPad).
+
+---
+
+## Business Context
+
+### Organization
+- **Type**: Scalable donation platform (expanding beyond single-NGO model)
+- **Growth Model**: Platform model — multiple campaign creators, multiple donors
+- **Current State (v1.0)**: Single NGO, single cause, basic donation flow
+- **Target State (v2.0)**: Multi-cause marketplace with creator ecosystem
+- **Geographic Focus**: India (INR currency, 80G tax compliance)
+
+### Business Drivers
+1. Enable a creator ecosystem for fundraising
+2. Build donor trust through verification and transparency
+3. Generate platform value through marketplace discovery
+4. Comply with Indian tax requirements (80G receipts)
+5. Increase donor retention through recurring donations
+6. Demonstrate impact through AI-generated reports
+
+### Industry Context
+- Digital fundraising platforms (Milaap, Ketto, GoFundMe) dominate the space
+- Indian donors increasingly expect tax receipts and transparency
+- Creator-driven campaigns are the primary growth model for donation platforms
+- AI-powered reporting is an emerging differentiator
+- Subscription-based giving is growing 25% year-over-year globally
+
+---
+
+## Business Goals
+
+| # | Goal | Measurable Outcome | Timeline |
+|---|---|---|---|
+| BG-01 | Enable multi-cause fundraising | ≥ 10 active campaigns within 30 days of launch | v2.0 Launch + 30d |
+| BG-02 | Build creator ecosystem | ≥ 5 verified campaign creators | v2.0 Launch + 30d |
+| BG-03 | Increase donation volume | 3x donation volume vs. v1.0 | v2.0 Launch + 90d |
+| BG-04 | Tax compliance | 100% donations generate 80G receipts | v2.0 Launch |
+| BG-05 | Donor retention | ≥ 20% donors set up recurring donations | v2.0 Launch + 60d |
+| BG-06 | Platform trust | 100% published campaigns are admin-verified | v2.0 Launch |
+| BG-07 | Transparency | AI impact reports available for all active campaigns | v2.0 Launch |
+
+---
+
+## Project Objectives
+
+| # | Objective | Deliverable |
+|---|---|---|
+| PO-01 | Build donation marketplace | `MarketplaceView` — browsable, searchable campaign list |
+| PO-02 | Build campaign creation flow | `CreateCampaignView` — multi-step form with document upload |
+| PO-03 | Build verification system | `AdminVerificationQueue` + approval/rejection workflow |
+| PO-04 | Build tax receipt system | Edge Function + PDF generation + receipt history |
+| PO-05 | Build recurring donation system | Razorpay Subscriptions + management UI |
+| PO-06 | Build campaign progress bar | `CampaignProgressBar` — auto-updating visual indicator |
+| PO-07 | Build donor wall | `DonorWallView` — public list with privacy controls |
+| PO-08 | Build AI impact reports | Edge Function + LLM integration + report viewer |
+| PO-09 | Build creator dashboard | `CreatorDashboardView` — stats, donations, reports |
+| PO-10 | Migrate v1.0 data | Migration scripts preserving all existing data |
+| PO-11 | Evolve database schema | New tables, extended tables, role-based RLS |
+
+---
+
+## Stakeholders
+
+| Stakeholder | Role | Interest | Involvement |
+|---|---|---|---|
+| Platform Owner | Sponsor | Platform growth, trust, revenue | Decision approval |
+| Campaign Creators | Primary User | Create campaigns, receive donations | Testing, feedback |
+| Donors | End User | Discover causes, donate, get receipts | Use app |
+| Platform Admin | Operator | Verify campaigns, monitor platform | Daily operations |
+| Developer | Builder | Clean architecture, modular code | Development |
+| AI Agent | Builder | Context-aware development | Follow PRD + Personas |
+
+---
+
+## Target Users
+
+### User 1: Donor
+- **Who**: General public, philanthropists, corporate CSR teams
+- **Tech Comfort**: Basic to intermediate smartphone user (iOS)
+- **Needs**: Discover campaigns, easy donation, tax receipts, track impact
+- **Frequency**: One-time, occasional, or monthly recurring
+- **Device**: iPhone (75%) + iPad (25%)
+
+### User 2: Campaign Creator
+- **Who**: NGO representatives, individuals running fundraisers, community leaders
+- **Tech Comfort**: Moderate — can fill forms, upload documents
+- **Needs**: Create campaign, get verified, receive donations, view analytics
+- **Frequency**: Regular access to manage campaigns
+- **Device**: iPhone (40%) + iPad (60%)
+
+### User 3: Platform Admin
+- **Who**: Platform operations team
+- **Tech Comfort**: Advanced — familiar with verification workflows
+- **Needs**: Review campaigns, approve/reject, monitor platform health
+- **Frequency**: Daily access
+- **Device**: iPad (80%) + iPhone (20%)
+
+---
+
+## Scope Definition
+
+### In Scope ✅
+
+| # | Item | Details | Feature |
+|---|---|---|---|
+| 1 | Donation Marketplace | Browse, search, filter verified campaigns | F2-07 |
+| 2 | Campaign Creation | Multi-step form, title, description, goal, documents | F2-06 |
+| 3 | Verification System | Admin review, approve/reject with reason | F2-08 |
+| 4 | Tax Receipt (80G) | Auto-generated PDF, download, history | F2-01 |
+| 5 | Recurring Donations | Monthly subscriptions via Razorpay | F2-02 |
+| 6 | Campaign Progress Bar | Visual goal progress, auto-update | F2-03 |
+| 7 | Donor Wall | Public donor list with anonymous option | F2-04 |
+| 8 | AI Impact Reports | LLM-generated reports from campaign data | F2-05 |
+| 9 | Creator Dashboard | Stats, donation log, reports, management | F2-09 |
+| 10 | Database Evolution | New tables, migration, role-based RLS | Architecture |
+| 11 | API Evolution | New Edge Functions for v2.0 features | Architecture |
+| 12 | v1.0 Data Migration | Preserve all existing donors and donations | Migration |
+| 13 | Universal App | Adaptive layout for all new views (iPhone + iPad) | UX |
+
+### Out of Scope ❌
+
+| # | Item | Reason |
+|---|---|---|
+| 1 | Android App | iOS only for v2.0 |
+| 2 | Web Application | Native iOS app only |
+| 3 | Fund Disbursement System | Manual process — future enhancement |
+| 4 | Donor-to-Creator Messaging | Not in v2.0 scope |
+| 5 | Social Sharing Integration | Future enhancement |
+| 6 | Multi-currency Support | INR only |
+| 7 | Push Notifications | Future enhancement |
+| 8 | Razorpay Live Mode | Test mode only |
+| 9 | Payment Gateway Alternatives | Razorpay only |
+| 10 | Admin User Management UI | Manual via Supabase Dashboard |
+| 11 | Campaign Categories Taxonomy | Simple text categories in v2.0 |
+| 12 | Donor Accounts (Social Login) | Email/password only |
+
+---
+
+## Business Processes
+
+### Process 1: Campaign Creation
+```
+Creator → Register → Create Campaign → Upload Docs → Submit → Admin Reviews → Published
+```
+
+### Process 2: Campaign Discovery & Donation
+```
+Donor → Open Marketplace → Search/Filter → Select Campaign → Donate → Receipt
+```
+
+### Process 3: Recurring Donation
+```
+Donor → Select Campaign → Choose Monthly → Setup Subscription → Monthly Charges → Receipts
+```
+
+### Process 4: Verification Workflow
+```
+Creator Submits → Admin Queue → Review Docs → Approve/Reject → Creator Notified
+```
+
+### Process 5: Impact Reporting
+```
+Creator → Request Report → AI Processes Data → Report Generated → Available for Download
+```
+
+---
+
+## Assumptions
+
+| # | Assumption | Impact if Wrong |
+|---|---|---|
+| A-01 | Campaign creators will provide valid documents | Verification backlog increases |
+| A-02 | Donors want to browse multiple campaigns | Marketplace design wasted |
+| A-03 | 80G receipts are legally required for all donations | Compliance risk |
+| A-04 | Razorpay Subscriptions API supports monthly INR plans | Must find alternative |
+| A-05 | AI/LLM API is available and affordable | Impact reports unavailable |
+| A-06 | Supabase free/pro tier supports storage needs | May need plan upgrade |
+| A-07 | Campaign creators are willing to wait for verification | Creator churn |
+| A-08 | v1.0 database schema is compatible with migration | Complex migration needed |
+
+---
+
+## Constraints
+
+| # | Constraint | Type | Impact |
+|---|---|---|---|
+| C-01 | Test mode only (no real money) | Business | Limited to demo/POC |
+| C-02 | Single developer + AI agent | Resource | Sequential development |
+| C-03 | Supabase tier limits | Budget | Storage and function limits |
+| C-04 | Simulator distribution only | Technical | No TestFlight without developer account |
+| C-05 | iOS 16 Minimum Target | Technical | API restrictions |
+| C-06 | v1.0 backward compatibility required | Technical | Cannot break existing data |
+| C-07 | 80G format specific to India | Legal | Not applicable internationally |
+
+---
+
+## Risks
+
+| # | Risk | Probability | Impact | Mitigation |
+|---|---|---|---|---|
+| R-01 | Razorpay Subscriptions API complexity | Medium | High | Feature-flag; fallback to manual reminders |
+| R-02 | AI report quality insufficient | Medium | Medium | Human review + quality threshold |
+| R-03 | Verification bottleneck (too many submissions) | Low | Medium | Batch review tools for admin |
+| R-04 | v1.0 migration data loss | Low | Critical | Dry run migration; backup before execution |
+| R-05 | Supabase Storage limits exceeded | Low | Medium | Monitor usage; plan upgrade path |
+| R-06 | PDF generation library issues on Deno | Medium | High | Test multiple libraries; have fallback |
+| R-07 | Campaign abuse (fake/fraudulent) | Medium | High | Strong verification; admin tools |
+| R-08 | Schema migration breaks v1.0 functionality | Low | Critical | Feature flags; staged rollout |
+
+---
+
+## Dependencies
+
+| # | Dependency | Type | Owner | Status |
+|---|---|---|---|---|
+| D-01 | All v1.0 dependencies | External | Validated | ✅ Complete |
+| D-02 | Razorpay Subscriptions API access | External | Developer | Required |
+| D-03 | PDF generation library (Deno-compatible) | External | Developer | Research needed |
+| D-04 | AI/LLM API access | External | Developer | Required |
+| D-05 | Supabase Storage setup | External | Developer | Required |
+| D-06 | 80G registration details (for receipt) | Content | Platform Owner | Required |
+| D-07 | Campaign categories list | Content | Product Manager | Required |
+
+---
+
+## Success Criteria
+
+> Detailed in [KPI.mdc](./KPI.mdc)
+
+### v2.0 Launch Criteria (All must pass)
+1. ✅ Campaign creation flow works end-to-end (KPI-2-002)
+2. ✅ Marketplace displays verified campaigns (KPI-2-006)
+3. ✅ Donation flow works from marketplace (KPI-2-001)
+4. ✅ Tax receipt generated after donation (KPI-2-004)
+5. ✅ Admin can verify/reject campaigns (KPI-2-033)
+6. ✅ Recurring subscription setup works (KPI-2-005)
+7. ✅ v1.0 data migrated successfully (KPI-2-056)
+8. ✅ All security KPIs pass (KPI-2-041 through KPI-2-047)
+9. ✅ Universal layout on all new views (KPI-2-048)
+
+---
+
+## Non-Functional Requirements
+
+| Aspect | Requirement | Reference |
+|---|---|---|
+| Performance | Marketplace load < 2s, API response < 500ms | KPI-2-006, KPI-2-037 |
+| Security | RLS on all tables, role-based access, no secrets in iOS code | KPI-2-041 through KPI-2-047 |
+| Availability | 99.9% platform uptime | KPI-2-053 |
+| Accessibility | Dynamic Type + VoiceOver for all views | KPI-2-052 |
+| Responsiveness | Universal App (iPhone SE to iPad Pro) | KPI-2-048 |
+| Scalability | Support 100+ concurrent campaigns, 1000+ monthly donations | Architecture |
+| Data Integrity | Zero orphaned records; financial records immutable | KPI-2-054 |
+| Backward Compatibility | v1.0 functionality preserved; data migrated | KPI-2-056 |
+
+---
+
+## Future Scope (Post v2.0)
+
+| Phase | Features | Priority |
+|---|---|---|
+| v2.1 | Push notifications for donations, verification, receipts | P1 |
+| v2.2 | Fund disbursement system (bank transfers to creators) | P1 |
+| v2.3 | Social sharing (WhatsApp, Twitter, Instagram) | P2 |
+| v2.4 | Campaign categories taxonomy with filtering | P2 |
+| v3.0 | Android app (Kotlin Multiplatform) | P2 |
+| v3.0 | Web dashboard for creators and admins | P2 |
+| v3.1 | Multi-currency support | P3 |
+| v3.2 | Donor social login (Apple ID, Google) | P3 |
+
+---
+
+## Scope Governance
+
+### Change Request Process
+1. Any scope change must be documented with impact assessment.
+2. Impact on timeline, KPIs, architecture, and migration must be evaluated.
+3. Approval required before implementation.
+4. Update PRD, KPI, Scope, and Architecture documents accordingly.
+
+### Scope Freeze
+- Scope is frozen after approval of this document.
+- Only bug fixes and approved changes during development.
+- Feature requests logged for future phases.
+- v1.0 functionality must never be degraded by v2.0 changes.
+
+---
+
+## Sign-Off
+
+| Role | Name | Date | Signature |
+|---|---|---|---|
+| Product Owner | | | |
+| Tech Lead | | | |
+| QA Lead | | | |
+| Project Sponsor | | | |

@@ -1,0 +1,188 @@
+# Key Performance Indicators (KPIs) — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Previous Version: [v1.0 KPI](../../v1.0/KPI.mdc)
+> Phase: 03 — Success Metrics
+> Previous: [PRD.mdc](./PRD.mdc)
+> Next: [Personas.mdc](./Personas.mdc)
+
+---
+
+## 1. Core Platform Metrics (v2.0 Gates)
+
+These KPIs must pass before v2.0 can be considered release-ready.
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-001** | Donation Completion Rate | End-to-end donation flow from marketplace browse to payment success | XCUITest + Analytics | ≥ 85% | Pending |
+| **KPI-2-002** | Campaign Creation Success | Creator completes campaign creation flow without errors | XCUITest | ≥ 90% | Pending |
+| **KPI-2-003** | Verification Processing Time | Time from creator submission to admin decision | Admin dashboard timestamp audit | < 48 hours (avg) | Pending |
+| **KPI-2-004** | Tax Receipt Generation | 80G receipt PDF generated for every completed donation | Integration test + DB audit | 100% | Pending |
+| **KPI-2-005** | Recurring Subscription Setup | Subscription creation and first charge success rate | Integration test | ≥ 95% | Pending |
+
+---
+
+## 2. Feature-Level Metrics
+
+### 2.1 Donation Marketplace (F2-07)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-006** | Marketplace Load Time | Time to render campaign list with images | Xcode Instruments | < 2.0 seconds | Pending |
+| **KPI-2-007** | Search Response Time | Campaign search/filter query response | Network Monitor | < 500ms (P90) | Pending |
+| **KPI-2-008** | Campaign Detail Load | Time to load full campaign detail view | Xcode Instruments | < 1.5 seconds | Pending |
+| **KPI-2-009** | Discovery-to-Donation Conversion | % of campaign views that result in donation | Analytics events | ≥ 10% | Pending |
+
+### 2.2 Campaign Creation & Management (F2-06, F2-09)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-010** | Campaign Form Completion | Creator completes all required fields without abandonment | XCUITest | ≥ 90% form completion | Pending |
+| **KPI-2-011** | Document Upload Success | Verification documents upload without failure | Integration test | ≥ 98% | Pending |
+| **KPI-2-012** | Dashboard Load Time | Creator dashboard with stats renders fully | Xcode Instruments | < 2.0 seconds | Pending |
+| **KPI-2-013** | Dashboard Data Accuracy | Stats match raw database totals exactly | Unit test (SQL function) | 100% match | Pending |
+
+### 2.3 Tax Receipt System (F2-01)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-014** | Receipt Generation Time | Time from donation completion to receipt availability | Edge Function timing | < 30 seconds | Pending |
+| **KPI-2-015** | Receipt PDF Validity | Generated PDF contains all required 80G fields | Manual + automated PDF parse | 100% field compliance | Pending |
+| **KPI-2-016** | Receipt Download Success | Donor can download receipt from history | XCUITest | 100% | Pending |
+| **KPI-2-017** | Receipt Storage Reliability | All receipts persisted in Supabase Storage | DB audit | 0 missing receipts | Pending |
+
+### 2.4 Recurring Donations (F2-02)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-018** | Subscription Creation | Monthly subscription setup completes successfully | Integration test | ≥ 95% | Pending |
+| **KPI-2-019** | Payment Retry Success | Failed recurring payments recovered within 7 days | Log analysis | ≥ 70% recovery | Pending |
+| **KPI-2-020** | Subscription Cancellation | User can cancel subscription without errors | XCUITest | 100% | Pending |
+| **KPI-2-021** | 30-Day Retention | Subscribers still active after 30 days | Analytics | ≥ 80% | Pending |
+
+### 2.5 Campaign Progress Bar (F2-03)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-022** | Progress Accuracy | Progress bar reflects actual raised_amount / target_amount | Unit test | 100% match | Pending |
+| **KPI-2-023** | Auto-Update After Donation | Progress updates within 5 seconds of donation confirmation | Integration test | < 5 seconds | Pending |
+| **KPI-2-024** | Progress Bar Render | Smooth animation on progress change | Manual inspection | Smooth at 60 FPS | Pending |
+
+### 2.6 Donor Wall (F2-04)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-025** | Donor Wall Load Time | Public donor list renders fully | Xcode Instruments | < 1.0 seconds | Pending |
+| **KPI-2-026** | Privacy Respect | Anonymous donors shown as "Anonymous" | XCUITest | 100% privacy compliance | Pending |
+| **KPI-2-027** | Donor Wall Scrolling | Smooth scrolling performance on large lists | Xcode Instruments (Animation) | 60 FPS | Pending |
+
+### 2.7 AI Impact Report (F2-05)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-028** | Report Generation Time | Time to generate AI impact report | Edge Function timing | < 60 seconds | Pending |
+| **KPI-2-029** | Report Quality Score | Report contains meaningful statistics and narrative | Manual review (sample) | ≥ 4/5 quality rating | Pending |
+| **KPI-2-030** | Report Availability | Generated report accessible for download | XCUITest | 100% | Pending |
+| **KPI-2-031** | Graceful Degradation | System handles AI service unavailability | Integration test | Queue + notify | Pending |
+
+### 2.8 Verification System (F2-08)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-032** | Verification Queue Accuracy | All pending requests appear in admin queue | XCUITest | 100% | Pending |
+| **KPI-2-033** | Approve/Reject Workflow | Admin can approve or reject with reason | XCUITest | 100% functional | Pending |
+| **KPI-2-034** | Status Transition Integrity | Campaign status transitions follow defined state machine | Unit test | Zero invalid transitions | Pending |
+| **KPI-2-035** | Rejected Campaign Notification | Creator notified of rejection with reason | Integration test | 100% notification delivery | Pending |
+
+---
+
+## 3. Performance Metrics (Platform-Wide)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-036** | App Launch Time | Time from launch to marketplace screen rendered | Xcode Instruments | < 2.5 seconds | Pending |
+| **KPI-2-037** | API Response Time | All Edge Function responses (P90) | Network Monitor | < 500ms | Pending |
+| **KPI-2-038** | Memory Footprint | Max memory during marketplace browse + donate flow | Xcode Instruments | < 200 MB | Pending |
+| **KPI-2-039** | Image Loading | Campaign images load with placeholders | Manual | Progressive loading visible | Pending |
+| **KPI-2-040** | Offline Handling | App shows cached data when offline | Manual (Network Link Conditioner) | Cached campaigns shown | Pending |
+
+---
+
+## 4. Security Metrics (Strict Gates)
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-041** | Zero PCI Data Stored | No payment card/UPI data in database or app | Code review + DB audit | 0 instances | Pending |
+| **KPI-2-042** | RLS Enabled (All Tables) | Row Level Security blocks unauthorized access on all new tables | API test (anonymous) | All tables protected | Pending |
+| **KPI-2-043** | Creator Data Isolation | Creator can only view/edit their own campaigns | RLS policy test | Zero cross-access | Pending |
+| **KPI-2-044** | Admin Role Enforcement | Admin-only actions blocked for non-admin users | XCUITest + API test | 100% blocked | Pending |
+| **KPI-2-045** | Document Upload Security | Uploaded files scanned for type; no executable uploads | Edge Function validation | Reject non-document files | Pending |
+| **KPI-2-046** | Receipt Integrity | Generated receipts cannot be tampered with | Hash verification | Tamper-proof | Pending |
+| **KPI-2-047** | Subscription Auth | Only the subscription owner can cancel | RLS policy test | 100% enforced | Pending |
+
+---
+
+## 5. UX & Quality Metrics
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-048** | Universal Layout (v2.0 views) | All new views adapt to iPhone SE through iPad Pro | Simulator testing | No clipping, correct padding | Pending |
+| **KPI-2-049** | Form Validation Feedback | All forms show inline validation errors | XCUITest | Immediate feedback | Pending |
+| **KPI-2-050** | Error State Recovery | Network failures show alerts with retry options | Manual | Alert + retry available | Pending |
+| **KPI-2-051** | Empty State Design | Empty campaigns, empty donor wall, empty history | XCUITest | Friendly empty state messages | Pending |
+| **KPI-2-052** | Accessibility | Dynamic Type + VoiceOver for all new views | Accessibility Inspector | Full support | Pending |
+
+---
+
+## 6. System Reliability Metrics
+
+| KPI ID | Metric | Description | Verification Method | Target | Status |
+|---|---|---|---|---|---|
+| **KPI-2-053** | Platform Uptime | Supabase + Edge Functions availability | Monitoring dashboard | 99.9% | Pending |
+| **KPI-2-054** | Data Consistency | No orphaned donations, receipts, or subscriptions | DB integrity check script | Zero orphans | Pending |
+| **KPI-2-055** | Webhook Processing | All Razorpay webhooks processed successfully | Log analysis | ≥ 99.5% | Pending |
+| **KPI-2-056** | Migration Integrity | All v1.0 data preserved after migration | Post-migration audit | 100% records intact | Pending |
+
+---
+
+## 7. Acceptance Gates (v2.0)
+
+| Gate | Required KPIs | Who Approves |
+|---|---|---|
+| **Security Review** | KPI-2-041 through KPI-2-047 | Security / Dev Lead |
+| **Feature Completeness** | KPI-2-001 through KPI-2-005 | Product Manager |
+| **Performance** | KPI-2-036 through KPI-2-040 | Developer |
+| **QA / Testing** | KPI-2-006 through KPI-2-035, KPI-2-048 through KPI-2-052 | QA Engineer |
+| **Data Integrity** | KPI-2-053 through KPI-2-056 | Database Admin |
+| **v2.0 Launch** | All above gates pass | Project Sponsor |
+
+---
+
+## 8. Verification Schedule
+
+| Activity | Frequency | When |
+|---|---|---|
+| Unit Tests (XCTest) | Every commit | CI pipeline |
+| Integration Tests (Edge Functions) | Before major PRs | Manual trigger |
+| UI Tests (XCUITest) | Before each phase delivery | Manual trigger |
+| Performance Profiling | End of each phase | Xcode Instruments |
+| Security Audit | Before v2.0 launch | Code review + API testing |
+| Migration Dry Run | Before v2.0 launch | Staging environment |
+| Accessibility Audit | Before v2.0 launch | Accessibility Inspector |
+
+---
+
+## 9. KPI Traceability (Feature → KPI)
+
+| Feature | KPIs |
+|---|---|
+| F2-01: Tax Receipt | KPI-2-014, KPI-2-015, KPI-2-016, KPI-2-017 |
+| F2-02: Recurring Donation | KPI-2-018, KPI-2-019, KPI-2-020, KPI-2-021 |
+| F2-03: Progress Bar | KPI-2-022, KPI-2-023, KPI-2-024 |
+| F2-04: Donor Wall | KPI-2-025, KPI-2-026, KPI-2-027 |
+| F2-05: AI Report | KPI-2-028, KPI-2-029, KPI-2-030, KPI-2-031 |
+| F2-06: Campaign Creation | KPI-2-010, KPI-2-011 |
+| F2-07: Marketplace | KPI-2-006, KPI-2-007, KPI-2-008, KPI-2-009 |
+| F2-08: Verification | KPI-2-032, KPI-2-033, KPI-2-034, KPI-2-035 |
+| F2-09: Dashboard | KPI-2-012, KPI-2-013 |
+| Platform-wide | KPI-2-036 through KPI-2-056 |

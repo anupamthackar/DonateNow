@@ -1,0 +1,323 @@
+# Feature Implementation Plan — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Reference: [PRD.mdc](../Context/PRD.mdc) | [Feature_Impact_Analysis.mdc](../Context/Feature_Impact_Analysis.mdc) | [System_Architecture.mdc](../Architecture/System_Architecture.mdc)
+
+---
+
+## Implementation Phases Overview
+
+```
+Phase 1 ──► Phase 2 ──► Phase 3 ──► Phase 4 ──► Phase 5 ──► Phase 6
+Database    Campaign    Donation    Payments    AI & Analytics  Testing
+& Arch      Creation   Marketplace & Receipts                 & Release
+(Foundation) (Creator)  (Discovery)  (Revenue)  (Intelligence)  (Quality)
+```
+
+---
+
+## Phase 1: Architecture + Database Foundation
+
+### Objective
+Establish the v2.0 database schema, migration scripts, storage buckets, and core infrastructure needed by all subsequent features.
+
+### Deliverables
+
+| # | Deliverable | Type | File |
+|---|---|---|---|
+| 1.1 | v2.0 database migration script | SQL | `005_v2_schema.sql` |
+| 1.2 | v2.0 RLS policies | SQL | `006_v2_security.sql` |
+| 1.3 | v2.0 SQL functions | SQL | `007_v2_functions.sql` |
+| 1.4 | v1.0 → v2.0 data migration | SQL | `008_v2_migration.sql` |
+| 1.5 | Test seed data | SQL | `009_v2_seed.sql` |
+| 1.6 | Supabase Storage buckets | SQL | `010_v2_storage.sql` |
+| 1.7 | Updated Swift models | Swift | `Models/*.swift` |
+| 1.8 | User model and auth extension | Swift | `User.swift`, `AuthService.swift` |
+
+### Dependencies
+- Supabase project access
+- v1.0 database backup
+
+### KPIs
+- KPI-2-042 (RLS on all tables)
+- KPI-2-054 (Data consistency)
+- KPI-2-056 (Migration integrity)
+
+### Acceptance Criteria
+- [ ] All new tables created with correct constraints
+- [ ] RLS enabled on all tables
+- [ ] v1.0 data migrated without loss
+- [ ] SQL functions return correct results
+- [ ] Storage buckets configured
+- [ ] Swift models compile and decode test data
+
+### Estimated Effort: 2-3 days
+
+---
+
+## Phase 2: Campaign Creation + Verification System
+
+### Objective
+Enable users to create donation campaigns, upload verification documents, and submit for admin approval. Build admin verification workflow.
+
+### Deliverables
+
+| # | Deliverable | Type | File | Feature |
+|---|---|---|---|---|
+| 2.1 | Campaign creation form | SwiftUI View | `CreateCampaignView.swift` | F2-06 |
+| 2.2 | Campaign creation ViewModel | Swift | `CreateCampaignViewModel.swift` | F2-06 |
+| 2.3 | Campaign repository | Swift | `CampaignRepository.swift` | F2-06 |
+| 2.4 | Document upload view | SwiftUI View | `DocumentUploadView.swift` | F2-06 |
+| 2.5 | File upload service | Swift | `FileUploadService.swift` | F2-06 |
+| 2.6 | My campaigns list | SwiftUI View | `MyCampaignsView.swift` | F2-06 |
+| 2.7 | Verification status view | SwiftUI View | `VerificationStatusView.swift` | F2-08 |
+| 2.8 | Verification repository | Swift | `VerificationRepository.swift` | F2-08 |
+| 2.9 | Admin verification queue | SwiftUI View | `AdminVerificationQueue.swift` | F2-08 |
+| 2.10 | Campaign review view | SwiftUI View | `CampaignReviewView.swift` | F2-08 |
+| 2.11 | Verification ViewModel | Swift | `VerificationViewModel.swift` | F2-08 |
+| 2.12 | TDD tests | Swift Tests | `*Tests.swift` | F2-06, F2-08 |
+
+### Dependencies
+- Phase 1 complete (database, models)
+
+### KPIs
+- KPI-2-002 (Campaign creation success)
+- KPI-2-003 (Verification processing time)
+- KPI-2-010 (Form completion)
+- KPI-2-011 (Document upload)
+- KPI-2-032 through KPI-2-035 (Verification system)
+
+### TDD Test Cases
+- TC-2-001 through TC-2-012 (Campaign creation)
+- TC-2-013 through TC-2-023 (Verification)
+
+### Acceptance Criteria
+- [ ] Creator can fill and submit campaign form
+- [ ] Creator can upload documents
+- [ ] Campaign saved with 'draft' status
+- [ ] Creator can submit for verification
+- [ ] Admin sees pending queue
+- [ ] Admin can approve/reject
+- [ ] Creator sees verification status
+- [ ] All TDD tests passing
+
+### Estimated Effort: 4-5 days
+
+---
+
+## Phase 3: Donation Marketplace + Discovery
+
+### Objective
+Build the campaign discovery marketplace with search, filter, campaign detail views, progress bar, and donor wall.
+
+### Deliverables
+
+| # | Deliverable | Type | File | Feature |
+|---|---|---|---|---|
+| 3.1 | Marketplace view | SwiftUI View | `MarketplaceView.swift` | F2-07 |
+| 3.2 | Marketplace ViewModel | Swift | `MarketplaceViewModel.swift` | F2-07 |
+| 3.3 | Campaign card component | SwiftUI View | `CampaignCardView.swift` | F2-07 |
+| 3.4 | Search bar component | SwiftUI View | `SearchBar.swift` | F2-07 |
+| 3.5 | Campaign search service | Swift | `CampaignSearchService.swift` | F2-07 |
+| 3.6 | Campaign detail view | SwiftUI View | `CampaignDetailView.swift` | F2-07 |
+| 3.7 | Campaign detail ViewModel | Swift | `CampaignDetailViewModel.swift` | F2-07 |
+| 3.8 | Progress bar component | SwiftUI View | `CampaignProgressBar.swift` | F2-03 |
+| 3.9 | Donor wall component | SwiftUI View | `DonorWallView.swift` | F2-04 |
+| 3.10 | Empty state component | SwiftUI View | `EmptyStateView.swift` | Platform |
+| 3.11 | Updated navigation | Swift | `DonateNowApp.swift` | Platform |
+| 3.12 | TDD tests | Swift Tests | `*Tests.swift` | F2-07, F2-03, F2-04 |
+
+### Dependencies
+- Phase 2 complete (campaigns exist to discover)
+
+### KPIs
+- KPI-2-006 through KPI-2-009 (Marketplace)
+- KPI-2-022 through KPI-2-024 (Progress bar)
+- KPI-2-025 through KPI-2-027 (Donor wall)
+
+### TDD Test Cases
+- TC-2-024 through TC-2-031 (Donation enhanced)
+- TC-2-058 through TC-2-065 (Marketplace)
+- TC-2-066 through TC-2-070 (Progress bar)
+- TC-2-071 through TC-2-075 (Donor wall)
+
+### Acceptance Criteria
+- [ ] Marketplace displays verified campaigns
+- [ ] Search and filter work correctly
+- [ ] Campaign detail shows full information
+- [ ] Progress bar updates after donation
+- [ ] Donor wall respects privacy settings
+- [ ] Navigation from marketplace to donation works
+- [ ] All TDD tests passing
+
+### Estimated Effort: 4-5 days
+
+---
+
+## Phase 4: Payments + Receipts + Subscriptions
+
+### Objective
+Enhance the payment flow with campaign context, add tax receipt generation, and implement recurring monthly donations.
+
+### Deliverables
+
+| # | Deliverable | Type | File | Feature |
+|---|---|---|---|---|
+| 4.1 | Enhanced verify-payment | Edge Function | `verify-payment/index.ts` | F2-01 |
+| 4.2 | Receipt generation function | Edge Function | `generate-receipt/index.ts` | F2-01 |
+| 4.3 | Receipt list view | SwiftUI View | `ReceiptListView.swift` | F2-01 |
+| 4.4 | Receipt detail view (PDF) | SwiftUI View | `ReceiptDetailView.swift` | F2-01 |
+| 4.5 | Receipt service | Swift | `ReceiptService.swift` | F2-01 |
+| 4.6 | Receipt ViewModel | Swift | `ReceiptViewModel.swift` | F2-01 |
+| 4.7 | Subscription creation function | Edge Function | `create-subscription/index.ts` | F2-02 |
+| 4.8 | Subscription cancellation function | Edge Function | `cancel-subscription/index.ts` | F2-02 |
+| 4.9 | Subscription webhook function | Edge Function | `subscription-webhook/index.ts` | F2-02 |
+| 4.10 | Subscription setup view | SwiftUI View | `SubscriptionSetupView.swift` | F2-02 |
+| 4.11 | Subscription management view | SwiftUI View | `SubscriptionManageView.swift` | F2-02 |
+| 4.12 | Subscription service | Swift | `SubscriptionService.swift` | F2-02 |
+| 4.13 | Subscription ViewModel | Swift | `SubscriptionViewModel.swift` | F2-02 |
+| 4.14 | Enhanced donation view | SwiftUI View | `DonationView.swift` (modified) | Platform |
+| 4.15 | Enhanced thank-you view | SwiftUI View | `ThankYouView.swift` (modified) | Platform |
+| 4.16 | TDD tests | Swift Tests | `*Tests.swift` | F2-01, F2-02 |
+
+### Dependencies
+- Phase 3 complete (donation flow from marketplace)
+- Razorpay Subscriptions API access
+
+### KPIs
+- KPI-2-004 (Receipt generation)
+- KPI-2-014 through KPI-2-017 (Receipt system)
+- KPI-2-005 (Subscription setup)
+- KPI-2-018 through KPI-2-021 (Subscription system)
+
+### TDD Test Cases
+- TC-2-032 through TC-2-034 (Payment logs)
+- TC-2-035 through TC-2-042 (Receipts)
+- TC-2-043 through TC-2-051 (Subscriptions)
+
+### Acceptance Criteria
+- [ ] Receipt PDF generated after every donation
+- [ ] Receipt contains all 80G fields
+- [ ] Donor can download receipts
+- [ ] Monthly subscription can be created
+- [ ] Subscription can be cancelled
+- [ ] Recurring webhook processes payments correctly
+- [ ] Failed payments retried and paused after 3 failures
+- [ ] All TDD tests passing
+
+### Estimated Effort: 5-6 days
+
+---
+
+## Phase 5: AI Reporting + Creator Dashboard
+
+### Objective
+Build AI-powered impact reports and the creator dashboard with analytics, donation logs, and campaign management tools.
+
+### Deliverables
+
+| # | Deliverable | Type | File | Feature |
+|---|---|---|---|---|
+| 5.1 | Impact report function | Edge Function | `generate-impact-report/index.ts` | F2-05 |
+| 5.2 | Impact report service | Swift | `ImpactReportService.swift` | F2-05 |
+| 5.3 | Impact report view | SwiftUI View | `ImpactReportView.swift` | F2-05 |
+| 5.4 | Impact report ViewModel | Swift | `ImpactReportViewModel.swift` | F2-05 |
+| 5.5 | Creator dashboard view | SwiftUI View | `CreatorDashboardView.swift` | F2-09 |
+| 5.6 | Campaign donation log view | SwiftUI View | `CampaignDonationLogView.swift` | F2-09 |
+| 5.7 | Dashboard stats card | SwiftUI Component | `DashboardStatsCard.swift` | F2-09 |
+| 5.8 | Creator dashboard ViewModel | Swift | `CreatorDashboardViewModel.swift` | F2-09 |
+| 5.9 | Analytics service | Swift | `AnalyticsService.swift` | F2-09 |
+| 5.10 | Notification service | Swift | `NotificationService.swift` | Platform |
+| 5.11 | TDD tests | Swift Tests | `*Tests.swift` | F2-05, F2-09 |
+
+### Dependencies
+- Phase 4 complete (donations and receipts exist for reports)
+- AI/LLM API access
+
+### KPIs
+- KPI-2-028 through KPI-2-031 (AI Report)
+- KPI-2-012, KPI-2-013 (Dashboard)
+
+### TDD Test Cases
+- TC-2-052 through TC-2-057 (AI Report)
+- TC-2-076 through TC-2-080 (Dashboard)
+
+### Acceptance Criteria
+- [ ] Creator can generate AI impact report
+- [ ] Report contains meaningful statistics and narrative
+- [ ] Report handles AI service unavailability gracefully
+- [ ] Dashboard shows accurate campaign stats
+- [ ] Creator sees donation log per campaign
+- [ ] All TDD tests passing
+
+### Estimated Effort: 3-4 days
+
+---
+
+## Phase 6: Testing, Polish + Release
+
+### Objective
+Full integration testing, performance optimization, security audit, UI polish, and release preparation.
+
+### Deliverables
+
+| # | Deliverable | Type | Description |
+|---|---|---|---|
+| 6.1 | Full UI test suite | XCUITest | End-to-end flows for all features |
+| 6.2 | Performance profiling | Instruments | Memory, CPU, rendering |
+| 6.3 | Security audit | Manual + Automated | RLS, secrets, PCI compliance |
+| 6.4 | Accessibility audit | Inspector | Dynamic Type, VoiceOver |
+| 6.5 | Migration dry run | SQL | Full v1.0 → v2.0 migration test |
+| 6.6 | Bug fixes | All | Issues from testing phases |
+| 6.7 | UI polish | SwiftUI | Animations, transitions, empty states |
+| 6.8 | Documentation update | Markdown | Walkthrough, release notes |
+
+### Dependencies
+- All phases 1-5 complete
+
+### KPIs
+- KPI-2-036 through KPI-2-040 (Performance)
+- KPI-2-041 through KPI-2-047 (Security)
+- KPI-2-048 through KPI-2-052 (UX)
+- KPI-2-053 through KPI-2-056 (Reliability)
+
+### TDD Test Cases
+- TC-2-081 through TC-2-085 (Security)
+- All remaining tests
+
+### Acceptance Criteria
+- [ ] All 85 TDD test cases passing
+- [ ] All 57 acceptance criteria verified
+- [ ] All 56 KPIs verified
+- [ ] Performance meets targets
+- [ ] Security audit passes
+- [ ] Migration dry run successful
+- [ ] Universal layout verified on all device sizes
+
+### Estimated Effort: 3-4 days
+
+---
+
+## Implementation Timeline Summary
+
+| Phase | Duration | Cumulative | Features |
+|---|---|---|---|
+| Phase 1 | 2-3 days | Week 1 | Database + Architecture |
+| Phase 2 | 4-5 days | Week 1-2 | Campaign Creation + Verification |
+| Phase 3 | 4-5 days | Week 2-3 | Marketplace + Discovery |
+| Phase 4 | 5-6 days | Week 3-4 | Payments + Receipts + Subscriptions |
+| Phase 5 | 3-4 days | Week 4-5 | AI Reports + Dashboard |
+| Phase 6 | 3-4 days | Week 5-6 | Testing + Polish + Release |
+| **Total** | **21-27 days** | **~6 weeks** | **All v2.0 features** |
+
+---
+
+## Risk Mitigation During Implementation
+
+| Risk | Phase | Mitigation |
+|---|---|---|
+| Migration data loss | Phase 1 | Backup before migration; rollback script |
+| Razorpay Subscriptions complexity | Phase 4 | Feature flag; start early research |
+| AI report quality | Phase 5 | Human review; quality threshold |
+| Performance regression | Phase 6 | Profile early; lazy loading |
+| Security gap | Phase 6 | Security audit before release |

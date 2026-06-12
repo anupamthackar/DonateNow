@@ -1,0 +1,635 @@
+# API Changes — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Previous: [v1.0 PRD Data Layer](../../v1.0/PRD.md)
+> Reference: [PRD.mdc](../Context/PRD.mdc) | [Database_Changes.mdc](./Database_Changes.mdc)
+
+---
+
+## 1. API Evolution Overview
+
+### v1.0 Edge Functions (Preserved)
+
+| Function | Purpose | Status in v2.0 |
+|---|---|---|
+| `create-order` | Create Razorpay order for one-time payment | ✅ Preserved (enhanced) |
+| `verify-payment` | Verify Razorpay signature + insert donation | ✅ Modified (triggers receipt) |
+| `razorpay-webhook` | Handle payment status events | ✅ Preserved |
+
+### v2.0 New Edge Functions
+
+| Function | Purpose | Priority |
+|---|---|---|
+| `create-subscription` | Create Razorpay monthly subscription | P0 |
+| `cancel-subscription` | Cancel active subscription | P0 |
+| `subscription-webhook` | Handle recurring payment events | P0 |
+| `generate-receipt` | Generate 80G tax receipt PDF | P0 |
+| `generate-impact-report` | Generate AI-powered impact report | P1 |
+
+---
+
+## 2. Campaign APIs (Supabase SDK — Direct)
+
+### 2.1 List Verified Campaigns (Marketplace)
+
+```swift
+// Client SDK — no Edge Function needed
+let campaigns = try await supabase
+    .from("donation_profiles")
+    .select("*, users!creator_id(name)")
+    .eq("verification_status", "verified")
+    .eq("is_active", true)
+    .order("created_at", ascending: false)
+    .execute()
+    .value
+```
+
+**Auth**: Anonymous (RLS allows public read of verified campaigns)
+**Response**: Array of `DonationProfile` with creator name
+
+### 2.2 Search Campaigns
+
+```swift
+let results = try await supabase
+    .from("donation_profiles")
+    .select()
+    .eq("verification_status", "verified")
+    .eq("is_active", true)
+    .ilike("title", "%\(query)%")
+    .execute()
+    .value
+```
+
+**Auth**: Anonymous
+**Filters**: `category`, `title` (ilike), `target_amount` range
+
+### 2.3 Get Campaign Detail
+
+```swift
+let campaign = try await supabase
+    .from("donation_profiles")
+    .select("*, users!creator_id(name, avatar_url)")
+    .eq("id", campaignId)
+    .single()
+    .execute()
+    .value
+```
+
+**Auth**: Anonymous (verified campaigns only via RLS)
+
+### 2.4 Create Campaign
+
+```swift
+let newCampaign = try await supabase
+    .from("donation_profiles")
+    .insert(CreateCampaignRequest(
+        creator_id: userId,
+        title: title,
+        description: description,
+        category: category,
+        target_amount: targetAmount,
+        image_url: imageUrl
+    ))
+    .select()
+    .single()
+    .execute()
+    .value
+```
+
+**Auth**: Authenticated (Creator)
+**Validation**: Title required, description required, target_amount > 0
+
+### 2.5 Update Campaign
+
+```swift
+try await supabase
+    .from("donation_profiles")
+    .update(UpdateCampaignRequest(
+        title: newTitle,
+        description: newDescription,
+        target_amount: newTarget
+    ))
+    .eq("id", campaignId)
+    .execute()
+```
+
+**Auth**: Authenticated (Creator — own campaigns only via RLS)
+**Note**: Material changes reset verification_status to 'pending'
+
+---
+
+## 3. Donation APIs (Enhanced)
+
+### 3.1 Create Order (v1.0 Enhanced)
+
+**Edge Function**: `create-order`
+
+```json
+// Request
+{
+  "amount": 500,
+  "currency": "INR",
+  "campaign_id": "uuid-of-campaign"
+}
+
+// Response — Success (200)
+{
+  "order_id": "order_xxxxxxxxx",
+  "amount": 50000,
+  "currency": "INR",
+  "key_id": "rzp_test_xxxxxxxxx"
+}
+
+// Response — Error (400)
+{ "error": "Invalid donation amount." }
+
+// Response — Error (400)
+{ "error": "Campaign is not active or not verified." }
+```
+
+**Changes from v1.0**: Added `campaign_id` parameter; validates campaign is verified and active.
+
+### 3.2 Verify Payment (v1.0 Enhanced)
+
+**Edge Function**: `verify-payment`
+
+```json
+// Request
+{
+  "razorpay_order_id": "order_xxxxxxxxx",
+  "razorpay_payment_id": "pay_xxxxxxxxx",
+  "razorpay_signature": "xxxxxxxxxxxxxxxx",
+  "donor_name": "Rahul Sharma",
+  "donor_email": "rahul@example.com",
+  "donor_phone": "9876543210",
+  "amount": 500,
+  "campaign_id": "uuid-of-campaign",
+  "donor_user_id": "uuid-of-user-or-null",
+  "is_anonymous": false
+}
+
+// Response — Success (200)
+{
+  "success": true,
+  "donation_id": "uuid-of-donation",
+  "receipt_id": "uuid-of-receipt",
+  "receipt_url": "https://storage.supabase.co/receipts/DN-2026-00001.pdf"
+}
+
+// Response — Error (400)
+{ "error": "Payment verification failed." }
+```
+
+**Changes from v1.0**: Added `campaign_id`, `donor_user_id`, `is_anonymous`; triggers receipt generation; returns receipt info.
+
+### 3.3 Get Donor Wall
+
+```swift
+let donors = try await supabase
+    .from("donations")
+    .select("donor_name, amount, created_at")
+    .eq("campaign_id", campaignId)
+    .eq("status", "completed")
+    .eq("is_anonymous", false)
+    .order("created_at", ascending: false)
+    .limit(50)
+    .execute()
+    .value
+```
+
+**Auth**: Anonymous (RLS allows public read of non-anonymous completed donations)
+
+### 3.4 Get Donation History (Registered Donor)
+
+```swift
+let history = try await supabase
+    .from("donations")
+    .select("*, donation_profiles!campaign_id(title), tax_receipts!receipt_id(receipt_number, pdf_url)")
+    .eq("donor_user_id", userId)
+    .order("created_at", ascending: false)
+    .execute()
+    .value
+```
+
+**Auth**: Authenticated (Donor — own donations via RLS)
+
+---
+
+## 4. Receipt APIs
+
+### 4.1 Generate Receipt
+
+**Edge Function**: `generate-receipt`
+**Trigger**: Called internally by `verify-payment` after successful donation.
+
+```json
+// Request (Internal)
+{
+  "donation_id": "uuid",
+  "donor_name": "Rahul Sharma",
+  "donor_email": "rahul@example.com",
+  "amount": 500,
+  "donation_date": "2026-06-12",
+  "campaign_title": "Education for Children",
+  "ngo_name": "Example Foundation",
+  "ngo_80g_number": "80G/12345/2025",
+  "ngo_pan": "AAACE1234F",
+  "ngo_address": "123 NGO Street, Mumbai"
+}
+
+// Response — Success (200)
+{
+  "receipt_id": "uuid",
+  "receipt_number": "DN-2026-00001",
+  "pdf_url": "https://xyz.supabase.co/storage/v1/object/receipts/DN-2026-00001.pdf",
+  "financial_year": "FY2025-26"
+}
+
+// Response — Error (500)
+{ "error": "Receipt generation failed. Queued for retry." }
+```
+
+### 4.2 Get Receipts (Donor)
+
+```swift
+let receipts = try await supabase
+    .from("tax_receipts")
+    .select("*, donations!donation_id(amount, campaign_id, donation_profiles!campaign_id(title))")
+    .order("created_at", ascending: false)
+    .execute()
+    .value
+```
+
+**Auth**: Authenticated (Donor — own receipts via RLS)
+
+### 4.3 Download Receipt PDF
+
+```swift
+let data = try await supabase.storage
+    .from("receipts")
+    .download(path: receiptFilePath)
+```
+
+**Auth**: Authenticated (Donor — own receipts)
+
+---
+
+## 5. Subscription APIs
+
+### 5.1 Create Subscription
+
+**Edge Function**: `create-subscription`
+
+```json
+// Request
+{
+  "campaign_id": "uuid",
+  "amount": 500,
+  "currency": "INR",
+  "donor_name": "Rahul Sharma",
+  "donor_email": "rahul@example.com",
+  "donor_user_id": "uuid",
+  "frequency": "monthly"
+}
+
+// Response — Success (200)
+{
+  "subscription_id": "uuid",
+  "razorpay_sub_id": "sub_xxxxxxxxx",
+  "amount": 500,
+  "status": "active",
+  "next_charge_date": "2026-07-12T00:00:00Z"
+}
+
+// Response — Error (400)
+{ "error": "Campaign is not active." }
+
+// Response — Error (500)
+{ "error": "Subscription creation failed." }
+```
+
+### 5.2 Cancel Subscription
+
+**Edge Function**: `cancel-subscription`
+
+```json
+// Request
+{
+  "subscription_id": "uuid"
+}
+
+// Response — Success (200)
+{
+  "success": true,
+  "cancelled_at": "2026-06-12T14:00:00Z",
+  "message": "Subscription cancelled. No future charges will be made."
+}
+
+// Response — Error (404)
+{ "error": "Subscription not found." }
+```
+
+### 5.3 Get Active Subscriptions
+
+```swift
+let subscriptions = try await supabase
+    .from("subscriptions")
+    .select("*, donation_profiles!campaign_id(title, image_url)")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .execute()
+    .value
+```
+
+**Auth**: Authenticated (User — own subscriptions via RLS)
+
+### 5.4 Subscription Webhook
+
+**Edge Function**: `subscription-webhook`
+
+```json
+// Request (from Razorpay)
+{
+  "event": "subscription.charged",
+  "payload": {
+    "subscription": {
+      "entity": {
+        "id": "sub_xxx",
+        "plan_id": "plan_xxx",
+        "status": "active",
+        "current_start": 1720000000,
+        "current_end": 1722678400
+      }
+    },
+    "payment": {
+      "entity": {
+        "id": "pay_xxx",
+        "amount": 50000,
+        "status": "captured"
+      }
+    }
+  }
+}
+
+// Events Handled:
+// - subscription.charged → Create donation record + receipt
+// - subscription.payment_failed → Increment retry_count; pause after 3
+// - subscription.cancelled → Update subscription status
+// - subscription.completed → Update subscription status
+```
+
+---
+
+## 6. Verification APIs
+
+### 6.1 Submit Verification Request
+
+```swift
+let request = try await supabase
+    .from("verification_requests")
+    .insert(VerificationSubmission(
+        campaign_id: campaignId,
+        documents_url: documentUrls,
+        status: "pending"
+    ))
+    .select()
+    .single()
+    .execute()
+    .value
+
+// Also update campaign status
+try await supabase
+    .from("donation_profiles")
+    .update(["verification_status": "pending"])
+    .eq("id", campaignId)
+    .execute()
+```
+
+**Auth**: Authenticated (Creator)
+
+### 6.2 Get Verification Queue (Admin)
+
+```swift
+let queue = try await supabase
+    .from("verification_requests")
+    .select("*, donation_profiles!campaign_id(title, creator_id, users!creator_id(name, email))")
+    .eq("status", "pending")
+    .order("submitted_at", ascending: true)
+    .execute()
+    .value
+```
+
+**Auth**: Authenticated (Admin only via RLS)
+
+### 6.3 Approve Campaign
+
+```swift
+// Update verification request
+try await supabase
+    .from("verification_requests")
+    .update([
+        "status": "approved",
+        "reviewer_id": adminUserId,
+        "reviewed_at": Date().ISO8601Format()
+    ])
+    .eq("id", requestId)
+    .execute()
+
+// Update campaign status
+try await supabase
+    .from("donation_profiles")
+    .update(["verification_status": "verified"])
+    .eq("id", campaignId)
+    .execute()
+```
+
+**Auth**: Authenticated (Admin only via RLS)
+
+### 6.4 Reject Campaign
+
+```swift
+try await supabase
+    .from("verification_requests")
+    .update([
+        "status": "rejected",
+        "reviewer_id": adminUserId,
+        "review_notes": rejectionReason,
+        "reviewed_at": Date().ISO8601Format()
+    ])
+    .eq("id", requestId)
+    .execute()
+
+try await supabase
+    .from("donation_profiles")
+    .update(["verification_status": "rejected"])
+    .eq("id", campaignId)
+    .execute()
+```
+
+**Auth**: Authenticated (Admin only via RLS)
+
+---
+
+## 7. Report APIs
+
+### 7.1 Generate Impact Report
+
+**Edge Function**: `generate-impact-report`
+
+```json
+// Request
+{
+  "campaign_id": "uuid",
+  "date_range": {
+    "from": "2026-01-01",
+    "to": "2026-06-12"
+  }
+}
+
+// Response — Success (200)
+{
+  "report_id": "uuid",
+  "content": "# Impact Report: Education for Children\n\nYour campaign has raised ₹2,50,000 from 150 donors over the past 6 months...\n\n## Key Statistics\n- Total Raised: ₹2,50,000\n- Total Donors: 150\n- Average Donation: ₹1,667\n- Largest Donation: ₹25,000\n- Most Active Month: March 2026\n\n## Impact Summary\nYour fundraising efforts have enabled...",
+  "statistics": {
+    "total_raised": 250000,
+    "total_donors": 150,
+    "avg_donation": 1667,
+    "largest_donation": 25000,
+    "recurring_donors": 35,
+    "monthly_trend": [
+      { "month": "Jan", "amount": 35000 },
+      { "month": "Feb", "amount": 40000 },
+      { "month": "Mar", "amount": 55000 },
+      { "month": "Apr", "amount": 45000 },
+      { "month": "May", "amount": 38000 },
+      { "month": "Jun", "amount": 37000 }
+    ]
+  },
+  "generated_at": "2026-06-12T14:00:00Z"
+}
+
+// Response — Error (400)
+{ "error": "Campaign must be verified to generate reports." }
+
+// Response — Error (503)
+{ "error": "AI service temporarily unavailable. Report queued for generation." }
+```
+
+### 7.2 Get Impact Reports
+
+```swift
+let reports = try await supabase
+    .from("impact_reports")
+    .select()
+    .eq("campaign_id", campaignId)
+    .order("generated_at", ascending: false)
+    .execute()
+    .value
+```
+
+**Auth**: Authenticated (Creator — own campaigns via RLS)
+
+---
+
+## 8. Dashboard Stats APIs
+
+### 8.1 Campaign Stats (Creator)
+
+```swift
+let stats = try await supabase
+    .rpc("get_campaign_stats", params: ["p_campaign_id": campaignId])
+    .execute()
+    .value
+```
+
+**Response**:
+```json
+{
+  "total_raised": 250000,
+  "total_donors": 150,
+  "total_donations": 175,
+  "avg_donation": 1428.57,
+  "latest_donation": "2026-06-12T10:30:00Z"
+}
+```
+
+### 8.2 Platform Stats (Admin)
+
+```swift
+let stats = try await supabase
+    .rpc("get_platform_stats")
+    .execute()
+    .value
+```
+
+**Response**:
+```json
+{
+  "total_campaigns": 45,
+  "verified_campaigns": 38,
+  "pending_verifications": 7,
+  "total_donations": 3500,
+  "total_raised": 1750000,
+  "total_subscribers": 200,
+  "total_users": 500
+}
+```
+
+---
+
+## 9. File Upload APIs
+
+### 9.1 Upload Verification Document
+
+```swift
+let fileUrl = try await supabase.storage
+    .from("documents")
+    .upload(
+        path: "\(userId)/\(UUID().uuidString).\(fileExtension)",
+        file: fileData,
+        options: FileOptions(contentType: mimeType)
+    )
+```
+
+**Auth**: Authenticated (Creator)
+**Validation**: Allowed types: `image/jpeg`, `image/png`, `application/pdf`. Max size: 5MB.
+
+### 9.2 Upload Campaign Image
+
+```swift
+let imageUrl = try await supabase.storage
+    .from("campaign-images")
+    .upload(
+        path: "campaigns/\(campaignId)/cover.\(extension)",
+        file: imageData,
+        options: FileOptions(contentType: "image/jpeg")
+    )
+```
+
+**Auth**: Authenticated (Creator)
+
+---
+
+## 10. Error Response Standards
+
+All Edge Functions follow this error response format:
+
+```json
+// Validation Error (400)
+{ "error": "Descriptive error message.", "code": "VALIDATION_ERROR" }
+
+// Authentication Error (401)
+{ "error": "Authentication required.", "code": "AUTH_REQUIRED" }
+
+// Authorization Error (403)
+{ "error": "Insufficient permissions.", "code": "FORBIDDEN" }
+
+// Not Found (404)
+{ "error": "Resource not found.", "code": "NOT_FOUND" }
+
+// Server Error (500)
+{ "error": "Internal server error.", "code": "SERVER_ERROR" }
+
+// Service Unavailable (503)
+{ "error": "Service temporarily unavailable.", "code": "SERVICE_UNAVAILABLE" }
+```

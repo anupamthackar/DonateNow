@@ -1,0 +1,208 @@
+# Test Cases — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Reference: [PRD.mdc](../Context/PRD.mdc) | [KPI.mdc](../Context/KPI.mdc) | [TDD_Strategy.mdc](./TDD_Strategy.mdc)
+
+---
+
+## Test Case Format
+
+| Field | Description |
+|---|---|
+| **Test ID** | Unique identifier (TC-2-NNN) |
+| **Feature** | Feature being tested (F2-XX) |
+| **Scenario** | What is being tested |
+| **Preconditions** | Required state before test |
+| **Steps** | Test execution steps |
+| **Expected Result** | What should happen |
+| **Test Type** | Unit / Integration / UI |
+| **KPIs** | Associated KPI(s) |
+
+---
+
+## 1. Campaign Creation Tests (F2-06)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-001 | Create campaign with valid data | Authenticated creator | Campaign created with status 'draft' | Unit | KPI-2-002 |
+| TC-2-002 | Create campaign with empty title | Authenticated creator | Validation error thrown | Unit | KPI-2-010 |
+| TC-2-003 | Create campaign with empty description | Authenticated creator | Validation error thrown | Unit | KPI-2-010 |
+| TC-2-004 | Create campaign with zero target amount | Authenticated creator | Validation error: amount must be > 0 | Unit | KPI-2-010 |
+| TC-2-005 | Create campaign with negative target | Authenticated creator | Validation error thrown | Unit | KPI-2-010 |
+| TC-2-006 | Upload valid document (PDF) | Authenticated creator | File uploaded successfully | Integration | KPI-2-011 |
+| TC-2-007 | Upload valid document (JPEG) | Authenticated creator | File uploaded successfully | Integration | KPI-2-011 |
+| TC-2-008 | Upload invalid file type (.exe) | Authenticated creator | Upload rejected | Integration | KPI-2-045 |
+| TC-2-009 | Upload file exceeding 5MB | Authenticated creator | Upload rejected with size error | Integration | KPI-2-045 |
+| TC-2-010 | Full campaign creation flow | Authenticated creator | Campaign appears in "My Campaigns" | UI | KPI-2-002 |
+| TC-2-011 | Edit existing campaign title | Authenticated creator, own campaign | Title updated successfully | Unit | — |
+| TC-2-012 | Edit another creator's campaign | Authenticated creator | Access denied (RLS) | Integration | KPI-2-043 |
+
+---
+
+## 2. Verification System Tests (F2-08)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-013 | Submit campaign for verification | Draft campaign with documents | Status changes to 'pending' | Integration | KPI-2-034 |
+| TC-2-014 | Submit without documents | Draft campaign, no documents | Validation error: documents required | Unit | KPI-2-034 |
+| TC-2-015 | Admin approves campaign | Admin user, pending request | Status changes to 'verified' | Integration | KPI-2-033 |
+| TC-2-016 | Admin rejects campaign with reason | Admin user, pending request | Status 'rejected', reason saved | Integration | KPI-2-033 |
+| TC-2-017 | Admin rejects without reason | Admin user, pending request | Validation error: reason required | Unit | KPI-2-033 |
+| TC-2-018 | Non-admin tries to approve | Creator user | Access denied (RLS) | Integration | KPI-2-044 |
+| TC-2-019 | Verification queue shows all pending | Admin user, 3 pending campaigns | Queue shows 3 items | Integration | KPI-2-032 |
+| TC-2-020 | Re-submit after rejection | Rejected campaign | New verification request created | Integration | KPI-2-034 |
+| TC-2-021 | Status transition: draft → pending | Valid submission | Transition allowed | Unit | KPI-2-034 |
+| TC-2-022 | Status transition: verified → draft | Invalid transition | Transition blocked | Unit | KPI-2-034 |
+| TC-2-023 | Admin verification flow end-to-end | Admin logged in, pending queue | Review, approve/reject, notification | UI | KPI-2-003 |
+
+---
+
+## 3. Donation Tests (Enhanced for v2.0)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-024 | Donate to verified campaign | Verified campaign, valid amount | Donation created, payment processed | Integration | KPI-2-001 |
+| TC-2-025 | Donate to unverified campaign | Unverified campaign | Blocked: "Campaign not verified" | Unit | — |
+| TC-2-026 | Donate to expired campaign | Campaign past end_date | Blocked: "Campaign has ended" | Unit | — |
+| TC-2-027 | Donate to inactive campaign | Campaign is_active = false | Blocked: "Campaign not active" | Unit | — |
+| TC-2-028 | Donate with anonymous flag | Valid donation, is_anonymous = true | Donation saved with is_anonymous = true | Unit | KPI-2-026 |
+| TC-2-029 | Donation updates raised_amount | Completed donation | campaign.raised_amount increases by donation amount | Integration | KPI-2-022 |
+| TC-2-030 | Duplicate order_id submission | Same order_id submitted twice | Returns existing donation (idempotent) | Integration | — |
+| TC-2-031 | Full donation flow from marketplace | Marketplace → campaign → donate → thank you | End-to-end success | UI | KPI-2-001 |
+
+---
+
+## 4. Payment Log Tests
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-032 | Log created on payment capture | Successful payment | Payment log entry with event_type 'payment.captured' | Integration | KPI-2-055 |
+| TC-2-033 | Log created on payment failure | Failed payment | Payment log entry with event_type 'payment.failed' | Integration | KPI-2-055 |
+| TC-2-034 | Webhook with invalid signature | Forged webhook | Request rejected, no log created | Integration | — |
+
+---
+
+## 5. Receipt Generation Tests (F2-01)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-035 | Receipt generated after payment | Completed donation | Receipt record created with PDF URL | Integration | KPI-2-004 |
+| TC-2-036 | Receipt contains all 80G fields | Generated receipt | All fields present: donor, amount, date, NGO, 80G#, receipt# | Integration | KPI-2-015 |
+| TC-2-037 | Receipt number format correct | Generated receipt | Format: DN-YYYY-NNNNN | Unit | KPI-2-015 |
+| TC-2-038 | Receipt numbers are sequential | Multiple receipts | Each receipt has unique sequential number | Unit | KPI-2-015 |
+| TC-2-039 | Donor can download own receipt | Registered donor, own receipt | PDF downloaded successfully | Integration | KPI-2-016 |
+| TC-2-040 | Donor cannot download others' receipts | Registered donor, other's receipt | Access denied (RLS) | Integration | KPI-2-046 |
+| TC-2-041 | Receipt generation failure handling | AI/PDF service down | Error queued for retry; donor notified later | Integration | KPI-2-017 |
+| TC-2-042 | Receipt download flow end-to-end | Completed donation | History → receipt list → PDF viewer | UI | KPI-2-016 |
+
+---
+
+## 6. Subscription Payment Tests (F2-02)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-043 | Create monthly subscription | Registered donor, verified campaign | Subscription active, first charge processed | Integration | KPI-2-018 |
+| TC-2-044 | Create subscription with invalid amount | Amount ≤ 0 | Validation error | Unit | — |
+| TC-2-045 | Cancel active subscription | Active subscription | Status changes to 'cancelled', no future charges | Integration | KPI-2-020 |
+| TC-2-046 | Cancel already cancelled subscription | Cancelled subscription | Error: already cancelled | Unit | — |
+| TC-2-047 | Recurring payment success (webhook) | Active subscription, charge event | New donation record + receipt created | Integration | KPI-2-055 |
+| TC-2-048 | Recurring payment failure (1st retry) | Active subscription, failed event | retry_count incremented | Integration | KPI-2-019 |
+| TC-2-049 | Recurring payment failure (3rd) | retry_count = 2, failed event | Subscription status → 'paused' | Integration | KPI-2-019 |
+| TC-2-050 | Subscription setup flow end-to-end | Registered donor | Select monthly → authorize → confirmation | UI | KPI-2-005 |
+| TC-2-051 | Subscription management view | User with active subscriptions | All subscriptions listed with cancel option | UI | KPI-2-020 |
+
+---
+
+## 7. AI Report Generation Tests (F2-05)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-052 | Generate report for active campaign | Verified campaign, ≥ 5 donations | Report generated with summary and stats | Integration | KPI-2-028 |
+| TC-2-053 | Generate report with < 5 donations | Verified campaign, 3 donations | Basic report with disclaimer | Integration | KPI-2-029 |
+| TC-2-054 | Generate report for unverified campaign | Unverified campaign | Blocked: "Campaign must be verified" | Unit | — |
+| TC-2-055 | AI service unavailable | Service down | Error queued; user notified | Integration | KPI-2-031 |
+| TC-2-056 | Report contains required stats | Generated report | total_raised, total_donors, avg_donation present | Unit | KPI-2-029 |
+| TC-2-057 | Report view displays correctly | Generated report available | Content and stats rendered in view | UI | KPI-2-030 |
+
+---
+
+## 8. Marketplace Tests (F2-07)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-058 | Marketplace loads verified campaigns | ≥ 3 verified campaigns | All verified campaigns displayed | Integration | KPI-2-006 |
+| TC-2-059 | Marketplace excludes unverified | Mix of verified/unverified | Only verified campaigns shown | Integration | — |
+| TC-2-060 | Search campaigns by title | Campaigns exist | Matching campaigns returned | Unit | KPI-2-007 |
+| TC-2-061 | Search with no results | No matching campaigns | Empty state displayed | Unit | KPI-2-051 |
+| TC-2-062 | Filter campaigns by category | Campaigns with categories | Filtered list returned | Unit | — |
+| TC-2-063 | Campaign detail loads fully | Valid campaign ID | Title, description, progress, donor wall loaded | Integration | KPI-2-008 |
+| TC-2-064 | Marketplace load performance | 50+ campaigns | Load time < 2.0 seconds | Performance | KPI-2-006 |
+| TC-2-065 | Marketplace browse and select flow | Active marketplace | Browse → search → select → view detail | UI | KPI-2-009 |
+
+---
+
+## 9. Progress Bar Tests (F2-03)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-066 | Progress at 0% | New campaign, no donations | Bar empty, shows "₹0 / ₹1,00,000" | Unit | KPI-2-022 |
+| TC-2-067 | Progress at 50% | ₹50,000 of ₹1,00,000 | Bar 50% filled | Unit | KPI-2-022 |
+| TC-2-068 | Progress at 100% | Target reached exactly | Bar 100% filled | Unit | KPI-2-022 |
+| TC-2-069 | Progress exceeds 100% | Raised > target | Bar 100% filled with "Goal exceeded" label | Unit | KPI-2-022 |
+| TC-2-070 | Progress updates after donation | New donation completed | Progress bar updates within 5 seconds | Integration | KPI-2-023 |
+
+---
+
+## 10. Donor Wall Tests (F2-04)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-071 | Donor wall shows public donors | 5 donors, 2 anonymous | 3 names shown, 2 hidden | Integration | KPI-2-026 |
+| TC-2-072 | Anonymous donor shown as "Anonymous" | Anonymous donation | Name displays as "Anonymous" | Unit | KPI-2-026 |
+| TC-2-073 | Donor wall empty state | Campaign with no donations | "No donors yet" message | Unit | KPI-2-051 |
+| TC-2-074 | Donor wall load performance | 100+ donors | Load time < 1 second | Performance | KPI-2-025 |
+| TC-2-075 | Donor wall scrolling performance | 100+ donors | Smooth at 60 FPS | Performance | KPI-2-027 |
+
+---
+
+## 11. Dashboard Tests (F2-09)
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-076 | Dashboard shows campaign stats | Creator with donations | Total raised, donor count, avg donation correct | Integration | KPI-2-013 |
+| TC-2-077 | Dashboard with zero donations | New campaign | All stats show 0 / empty | Unit | — |
+| TC-2-078 | Dashboard data accuracy | Known donation data | Stats match raw DB exactly | Unit | KPI-2-013 |
+| TC-2-079 | Creator can only see own stats | Multiple creators | Stats isolated per creator | Integration | KPI-2-043 |
+| TC-2-080 | Dashboard load performance | Campaign with 500 donations | Load time < 2.0 seconds | Performance | KPI-2-012 |
+
+---
+
+## 12. Security Tests
+
+| Test ID | Scenario | Preconditions | Expected Result | Test Type | KPIs |
+|---|---|---|---|---|---|
+| TC-2-081 | Anonymous user access to admin views | No auth | Redirected to login | UI | KPI-2-044 |
+| TC-2-082 | Creator access to admin verification | Creator auth | Access denied | Integration | KPI-2-044 |
+| TC-2-083 | Creator access to other's campaign data | Creator auth | RLS blocks access | Integration | KPI-2-043 |
+| TC-2-084 | Donor access to other's receipts | Donor auth | RLS blocks access | Integration | KPI-2-046 |
+| TC-2-085 | No payment data in app state | After donation | No card/UPI data in memory or storage | Manual | KPI-2-041 |
+
+---
+
+## Test Summary
+
+| Category | Test Count | Unit | Integration | UI | Performance |
+|---|---|---|---|---|---|
+| Campaign Creation | 12 | 6 | 4 | 1 | 1 |
+| Verification | 11 | 3 | 7 | 1 | 0 |
+| Donation | 8 | 3 | 4 | 1 | 0 |
+| Payment Logs | 3 | 0 | 3 | 0 | 0 |
+| Tax Receipt | 8 | 2 | 5 | 1 | 0 |
+| Subscription | 9 | 2 | 5 | 2 | 0 |
+| AI Report | 6 | 2 | 3 | 1 | 0 |
+| Marketplace | 8 | 2 | 3 | 1 | 2 |
+| Progress Bar | 5 | 4 | 1 | 0 | 0 |
+| Donor Wall | 5 | 2 | 1 | 0 | 2 |
+| Dashboard | 5 | 2 | 2 | 0 | 1 |
+| Security | 5 | 0 | 3 | 1 | 1 |
+| **Total** | **85** | **28** | **41** | **9** | **7** |

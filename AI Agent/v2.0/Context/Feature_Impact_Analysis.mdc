@@ -1,0 +1,419 @@
+# Feature Impact Analysis — DonateNow v2.0
+
+> Purpose: Analyze the cross-cutting impact of each v2.0 feature across all system dimensions.
+> Reference: [PRD.mdc](./PRD.mdc) | [Personas.mdc](./Personas.mdc)
+
+---
+
+## Impact Matrix Overview
+
+| Feature | Business Value | Frontend Impact | Backend Impact | Database Impact | API Impact | Testing Impact | Security Impact |
+|---|---|---|---|---|---|---|---|
+| F2-01: Tax Receipt | High | Medium | High | Medium | High | High | Medium |
+| F2-02: Recurring Donation | High | Medium | High | High | High | High | High |
+| F2-03: Progress Bar | Medium | Medium | Low | Medium | Low | Medium | Low |
+| F2-04: Donor Wall | Medium | Medium | Low | Low | Low | Medium | Medium |
+| F2-05: AI Impact Report | Medium | Medium | High | Medium | High | High | Medium |
+| F2-06: Campaign Creation | Critical | High | High | High | High | High | High |
+| F2-07: Marketplace | Critical | High | Medium | Medium | Medium | High | Medium |
+| F2-08: Verification | Critical | High | High | High | High | High | Critical |
+| F2-09: Dashboard | High | High | Medium | Medium | Medium | Medium | Medium |
+
+---
+
+## Feature 1: Auto-Generate Tax Receipt PDF (80G Format) — F2-01
+
+### Business Value
+- **Legal compliance**: Indian tax law requires 80G receipt for tax-deductible donations
+- **Donor trust**: Professional receipts increase donor confidence
+- **Repeat donations**: Receipts drive donor retention
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `ReceiptListView.swift` | New view — list of donor's receipts | P0 |
+| `ReceiptDetailView.swift` | New view — PDF viewer + share sheet | P0 |
+| `ThankYouView.swift` | Modified — add "Download Receipt" button | P0 |
+| `DonationHistoryView.swift` | Modified — receipt link per donation | P1 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `generate-receipt` Edge Function | New — PDF generation + storage | P0 |
+| `ReceiptService.swift` | New — fetch/download receipts | P0 |
+| `verify-payment` Edge Function | Modified — trigger receipt generation | P0 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `tax_receipts` | New table — receipt_number, donation_id, pdf_url, ngo_details |
+| `donations` | Add column: `receipt_id` (FK → tax_receipts) |
+
+### API Impact
+- New Edge Function: `generate-receipt`
+- Modified Edge Function: `verify-payment` (adds receipt trigger)
+- New SDK query: `supabase.from("tax_receipts").select()`
+
+### Testing Impact
+- Unit tests: Receipt number generation, PDF field validation
+- Integration tests: Receipt creation after payment verification
+- UI tests: Receipt download and display
+
+### Security Impact
+- Receipt PDFs must be tamper-proof (hash verification)
+- Only the donor can access their own receipts (RLS)
+- Receipt data contains PII — protect in storage
+
+---
+
+## Feature 2: Recurring Monthly Donation — F2-02
+
+### Business Value
+- **Revenue predictability**: Monthly recurring generates sustained income
+- **Donor retention**: Subscription model increases lifetime value
+- **Growth metric**: Recurring donors are key fundraising KPI
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `SubscriptionSetupView.swift` | New view — monthly donation setup | P0 |
+| `SubscriptionManageView.swift` | New view — view/cancel subscriptions | P0 |
+| `CampaignDetailView.swift` | Modified — add "Monthly" donation option | P0 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `create-subscription` Edge Function | New — Razorpay subscription creation | P0 |
+| `cancel-subscription` Edge Function | New — subscription cancellation | P0 |
+| `subscription-webhook` Edge Function | New — recurring payment event handler | P0 |
+| `SubscriptionService.swift` | New — subscription management | P0 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `subscriptions` | New table — subscription_id, user_id, campaign_id, status, amount, frequency |
+| `payment_logs` | Extended — log recurring payment events |
+| `donations` | Add column: `subscription_id` (FK → subscriptions) |
+
+### API Impact
+- 3 new Edge Functions: `create-subscription`, `cancel-subscription`, `subscription-webhook`
+- New Razorpay API integration: Subscriptions API
+
+### Testing Impact
+- Integration tests: Subscription create, charge, cancel, retry
+- Unit tests: Status transitions, amount validation
+- UI tests: Setup flow, cancellation flow
+
+### Security Impact
+- Subscription authorization requires authenticated user
+- Only subscription owner can cancel
+- Webhook signature verification for recurring events
+
+---
+
+## Feature 3: Campaign Progress Bar — F2-03
+
+### Business Value
+- **Social proof**: Shows campaign momentum
+- **Urgency**: Motivates donations near goal
+- **Transparency**: Donors see exactly how much is raised
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `CampaignProgressBar.swift` | New reusable component | P0 |
+| `CampaignDetailView.swift` | Integrated — shows progress bar | P0 |
+| `MarketplaceView.swift` | Integrated — mini progress bar in campaign cards | P1 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `verify-payment` Edge Function | Modified — update campaign raised_amount | P0 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `donation_profiles` | Uses `raised_amount` and `target_amount` columns |
+| `campaign_progress` | New table — cached progress snapshots (optional optimization) |
+
+### API Impact
+- No new Edge Functions
+- DB trigger: Auto-update `raised_amount` on donation insert
+
+### Testing Impact
+- Unit tests: Progress calculation, edge cases (0%, 100%, >100%)
+- UI tests: Visual rendering and animation
+
+### Security Impact
+- Low — read-only public data
+- Progress data derived from verified donations only
+
+---
+
+## Feature 4: Donor Wall — F2-04
+
+### Business Value
+- **Social proof**: Visible contributor list builds trust
+- **Recognition**: Donors feel appreciated
+- **Engagement**: Encourages others to donate
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `DonorWallView.swift` | New component — scrollable donor list | P1 |
+| `CampaignDetailView.swift` | Integrated — donor wall section | P1 |
+| `DonationView.swift` | Modified — add "Show name on donor wall" toggle | P1 |
+
+### Backend Impact
+- Minimal — query existing donations with `is_anonymous` filter
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `donations` | Add column: `is_anonymous` (BOOLEAN DEFAULT false) |
+
+### API Impact
+- SDK query with filter: `supabase.from("donations").select("donor_name, amount").eq("is_anonymous", false)`
+
+### Testing Impact
+- Unit tests: Anonymous flag handling
+- UI tests: Donor wall rendering, privacy toggle
+
+### Security Impact
+- Privacy: Must respect `is_anonymous` flag in all queries
+- RLS: Donor wall query returns only non-anonymous, completed donations
+
+---
+
+## Feature 5: AI-Written Impact Report — F2-05
+
+### Business Value
+- **Transparency**: Data-driven impact narratives
+- **Fundraising**: Professional reports attract more donors
+- **Differentiation**: AI-powered feature distinguishes the platform
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `ImpactReportView.swift` | New view — display AI report | P1 |
+| `CreatorDashboardView.swift` | Modified — "Generate Report" button | P1 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `generate-impact-report` Edge Function | New — LLM integration | P1 |
+| `ImpactReportService.swift` | New — report request/retrieval | P1 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `impact_reports` | New table — campaign_id, content, statistics_json, generated_at |
+
+### API Impact
+- New Edge Function: `generate-impact-report`
+- New SDK query: `supabase.from("impact_reports").select()`
+
+### Testing Impact
+- Integration tests: Report generation with various data volumes
+- Unit tests: Report data aggregation
+- Manual tests: Report quality assessment
+
+### Security Impact
+- AI API key stored only in Edge Function secrets
+- Reports accessible only to campaign creator and admin
+- No PII in generated report text
+
+---
+
+## Feature 6: User-Created Donation Profiles — F2-06
+
+### Business Value
+- **Platform growth**: Creator ecosystem drives campaign volume
+- **Scalability**: Users generate content, not just the platform owner
+- **Revenue**: More campaigns = more donations = more platform value
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `CreateCampaignView.swift` | New view — multi-step creation form | P0 |
+| `DocumentUploadView.swift` | New view — document upload for verification | P0 |
+| `EditCampaignView.swift` | New view — edit existing campaign | P1 |
+| `MyCampaignsView.swift` | New view — list creator's campaigns | P0 |
+| `VerificationStatusView.swift` | New view — verification progress | P0 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `CampaignRepository.swift` | New — CRUD operations for campaigns | P0 |
+| `FileUploadService.swift` | New — document upload to Supabase Storage | P0 |
+| `VerificationRepository.swift` | New — verification request management | P0 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `users` | New table — platform user profiles with roles |
+| `donation_profiles` | New table — replaces/extends `causes` |
+| `verification_requests` | New table — verification workflow |
+
+### API Impact
+- Multiple new SDK operations (insert, update, select on new tables)
+- Storage API for document upload
+
+### Testing Impact
+- Unit tests: Form validation, file type validation
+- Integration tests: Campaign create → verify → publish flow
+- UI tests: Multi-step form completion
+
+### Security Impact
+- **Critical**: File upload validation (type, size, no executables)
+- RLS: Creators can only manage their own campaigns
+- Verification prevents fraudulent campaigns
+
+---
+
+## Feature 7: Donation Discovery Marketplace — F2-07
+
+### Business Value
+- **Core experience**: Discovery is the platform's primary value proposition
+- **Donor choice**: Multiple campaigns increase donation probability
+- **Platform stickiness**: Browse experience drives return visits
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `MarketplaceView.swift` | New view — campaign grid/list | P0 |
+| `MarketplaceViewModel.swift` | New — search, filter, pagination logic | P0 |
+| `CampaignDetailView.swift` | New view — full campaign page | P0 |
+| `CampaignCardView.swift` | New component — campaign card for grid | P0 |
+| `SearchBar.swift` | New component — search input | P0 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `CampaignSearchService.swift` | New — full-text search + category filter | P0 |
+| `CampaignRepository.swift` | Extended — public campaign queries | P0 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `donation_profiles` | Full-text search index on title, description |
+| `donation_profiles` | Category column for filtering |
+
+### API Impact
+- SDK queries with `.ilike()`, `.eq()`, `.order()` for search/filter/sort
+
+### Testing Impact
+- Unit tests: Search query construction, filter logic
+- UI tests: Browse, search, filter, select, donate flow
+- Performance tests: Marketplace load time with 100+ campaigns
+
+### Security Impact
+- Only verified campaigns displayed publicly
+- RLS: Anonymous users can only read verified, active campaigns
+
+---
+
+## Feature 8: Verification System — F2-08
+
+### Business Value
+- **Trust**: Verified campaigns prevent fraud and build donor confidence
+- **Compliance**: Ensures legitimate fundraising only
+- **Platform integrity**: Prevents abuse of the marketplace
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `AdminVerificationQueue.swift` | New view — admin pending queue | P0 |
+| `CampaignReviewView.swift` | New view — admin review detail | P0 |
+| `VerificationStatusView.swift` | New view — creator verification status | P0 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `VerificationRepository.swift` | New — verification CRUD | P0 |
+| `AdminService.swift` | New — admin verification actions | P0 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `verification_requests` | New table — full verification workflow state |
+| `donation_profiles` | Add column: `verification_status` |
+
+### API Impact
+- SDK operations for verification queue, approve/reject actions
+
+### Testing Impact
+- Integration tests: Submit → review → approve/reject flow
+- Unit tests: Status state machine transitions
+- UI tests: Admin queue, review, decision
+
+### Security Impact
+- **Critical**: Only admin role can approve/reject
+- Verification documents stored securely with restricted access
+- Audit trail for all verification decisions
+
+---
+
+## Feature 9: Donation Management Dashboard — F2-09
+
+### Business Value
+- **Creator empowerment**: Visibility into campaign performance
+- **Data-driven decisions**: Creators optimize campaigns based on analytics
+- **Retention**: Dashboard keeps creators engaged with the platform
+
+### Frontend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `CreatorDashboardView.swift` | New view — stats overview | P1 |
+| `CampaignDonationLogView.swift` | New view — per-campaign donation list | P1 |
+| `DashboardStatsCard.swift` | New component — stat display card | P1 |
+
+### Backend Impact
+| Component | Change | Priority |
+|---|---|---|
+| `AnalyticsService.swift` | New — campaign stats aggregation | P1 |
+| `get_campaign_stats` SQL function | New — aggregate stats by campaign | P1 |
+
+### Database Impact
+| Table | Change |
+|---|---|
+| `donation_profiles` | Uses existing columns for aggregation |
+| SQL Functions | New: `get_campaign_stats(campaign_id)` |
+
+### API Impact
+- New RPC: `supabase.rpc("get_campaign_stats", { campaign_id })`
+
+### Testing Impact
+- Unit tests: Stats calculation accuracy
+- UI tests: Dashboard rendering with various data states
+
+### Security Impact
+- Creators can only see stats for their own campaigns (RLS)
+- No donor PII exposed in aggregate stats
+
+---
+
+## Cross-Feature Dependencies
+
+```
+F2-06 (Campaign Creation) ──────► F2-08 (Verification) ──────► F2-07 (Marketplace)
+         │                                                            │
+         ▼                                                            ▼
+F2-09 (Dashboard) ◄──────────────────────────────────── Donations flow in
+         │
+         ▼
+F2-05 (AI Report)
+
+F2-07 (Marketplace) ──► Donation ──► F2-01 (Tax Receipt)
+                                ──► F2-03 (Progress Bar update)
+                                ──► F2-04 (Donor Wall update)
+                                ──► F2-02 (Recurring if monthly)
+```
+
+### Implementation Order (Dependencies Resolved)
+1. **Phase 1**: Database + Architecture (foundation for all features)
+2. **Phase 2**: F2-06 (Campaign Creation) → F2-08 (Verification) — creator ecosystem
+3. **Phase 3**: F2-07 (Marketplace) → F2-03 (Progress Bar) → F2-04 (Donor Wall) — discovery
+4. **Phase 4**: Donation flow → F2-01 (Receipt) → F2-02 (Recurring) — payments
+5. **Phase 5**: F2-05 (AI Report) → F2-09 (Dashboard) — analytics
+6. **Phase 6**: Integration testing + polish + release

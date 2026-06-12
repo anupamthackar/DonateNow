@@ -1,0 +1,197 @@
+# Acceptance Testing — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Reference: [KPI.mdc](../Context/KPI.mdc) | [Test_Cases.mdc](./Test_Cases.mdc) | [PRD.mdc](../Context/PRD.mdc)
+
+---
+
+## 1. Acceptance Testing Strategy
+
+### Purpose
+Acceptance testing verifies that v2.0 meets all business requirements and is ready for release. It validates user flows, edge cases, and non-functional requirements from the end-user perspective.
+
+### Types of Acceptance Testing
+
+| Type | Purpose | Who Executes |
+|---|---|---|
+| **Functional Acceptance** | Each feature works as specified in PRD | QA / Developer |
+| **User Acceptance (UAT)** | Real user validates flows are intuitive | Product Owner / Stakeholders |
+| **Operational Acceptance** | System meets performance, security standards | DevOps / Developer |
+| **Migration Acceptance** | v1.0 data migrated correctly | Database Admin |
+
+---
+
+## 2. Feature Acceptance Criteria
+
+### F2-01: Tax Receipt (80G Format)
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-01 | Receipt PDF generated automatically after every successful donation | Auto-trigger verified | ☐ |
+| AC-02 | Receipt contains: donor name, amount, date, NGO name, 80G number, receipt number | PDF content check | ☐ |
+| AC-03 | Receipt number follows format DN-YYYY-NNNNN | Format validation | ☐ |
+| AC-04 | Donor can view receipt list in donation history | UI flow verified | ☐ |
+| AC-05 | Donor can download receipt PDF | Download + share sheet works | ☐ |
+| AC-06 | Receipt stored permanently in Supabase Storage | DB + Storage audit | ☐ |
+| AC-07 | Only the donor can access their own receipts | RLS policy test | ☐ |
+
+### F2-02: Recurring Monthly Donation
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-08 | Donor can select "Monthly Donation" option | UI toggle verified | ☐ |
+| AC-09 | Razorpay subscription created successfully | Edge Function test | ☐ |
+| AC-10 | First payment processed on subscription setup | Payment verified | ☐ |
+| AC-11 | Subsequent payments auto-processed monthly | Webhook test | ☐ |
+| AC-12 | Failed payment retried up to 3 times over 7 days | Retry logic verified | ☐ |
+| AC-13 | Subscription paused after 3 consecutive failures | Status transition verified | ☐ |
+| AC-14 | Donor can cancel subscription from management view | UI + Edge Function test | ☐ |
+| AC-15 | No future charges after cancellation | Subscription status verified | ☐ |
+
+### F2-03: Campaign Progress Bar
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-16 | Progress bar displays on campaign detail page | UI verified | ☐ |
+| AC-17 | Shows "₹X collected from ₹Y goal" format | Text format verified | ☐ |
+| AC-18 | Updates automatically within 5 seconds of donation | Auto-update test | ☐ |
+| AC-19 | Handles 0%, 50%, 100%, >100% correctly | Edge case tests | ☐ |
+| AC-20 | Smooth animation on progress change | Visual inspection at 60 FPS | ☐ |
+
+### F2-04: Donor Wall
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-21 | Donor wall visible on campaign detail page | UI verified | ☐ |
+| AC-22 | Shows donor name and amount for public donations | Data verified | ☐ |
+| AC-23 | Anonymous donors displayed as "Anonymous" | Privacy test | ☐ |
+| AC-24 | Donor can toggle "hide my name" during donation | Toggle works | ☐ |
+| AC-25 | Smooth scrolling with 100+ donors | Performance test | ☐ |
+
+### F2-05: AI Impact Report
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-26 | Creator can generate report from dashboard | UI flow verified | ☐ |
+| AC-27 | Report contains summary, statistics, and insights | Content review | ☐ |
+| AC-28 | Report generated within 60 seconds | Timing test | ☐ |
+| AC-29 | Graceful handling when AI service is unavailable | Error handling test | ☐ |
+| AC-30 | Only verified campaigns can generate reports | Validation test | ☐ |
+
+### F2-06: User-Created Donation Profiles
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-31 | Registered user can create a new campaign | Full creation flow | ☐ |
+| AC-32 | Campaign form validates all required fields | Validation test | ☐ |
+| AC-33 | Creator can upload verification documents | Upload test | ☐ |
+| AC-34 | Campaign created with status 'draft' | DB state verified | ☐ |
+| AC-35 | Creator can view all their campaigns | "My Campaigns" view | ☐ |
+| AC-36 | Creator can edit their own campaigns | Edit flow works | ☐ |
+| AC-37 | Creator cannot edit other creators' campaigns | RLS policy test | ☐ |
+
+### F2-07: Donation Discovery Marketplace
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-38 | Marketplace loads verified campaigns on app open | UI verified | ☐ |
+| AC-39 | Only verified, active campaigns are displayed | Data filter test | ☐ |
+| AC-40 | Donor can search campaigns by title | Search test | ☐ |
+| AC-41 | Donor can filter by category | Filter test | ☐ |
+| AC-42 | Campaign detail page shows full information | Content verified | ☐ |
+| AC-43 | Donor can initiate donation from campaign detail | Navigation works | ☐ |
+| AC-44 | Marketplace loads in < 2 seconds | Performance test | ☐ |
+
+### F2-08: Verification System
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-45 | Creator can submit campaign for verification | Submission flow | ☐ |
+| AC-46 | Admin sees pending campaigns in verification queue | Queue populated | ☐ |
+| AC-47 | Admin can review campaign details and documents | Review view works | ☐ |
+| AC-48 | Admin can approve campaign (goes live) | Status transition | ☐ |
+| AC-49 | Admin can reject campaign with reason | Rejection flow | ☐ |
+| AC-50 | Creator notified of approval/rejection | Status visible to creator | ☐ |
+| AC-51 | Rejected campaign can be re-submitted | Re-submission flow | ☐ |
+| AC-52 | Non-admin cannot access verification actions | RLS policy test | ☐ |
+
+### F2-09: Donation Management Dashboard
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| AC-53 | Creator sees campaign stats on dashboard | Stats displayed | ☐ |
+| AC-54 | Stats include: total raised, donor count, avg donation | Data verified | ☐ |
+| AC-55 | Stats match database totals exactly | Accuracy test | ☐ |
+| AC-56 | Creator can view donation log per campaign | Log displays | ☐ |
+| AC-57 | Dashboard loads in < 2 seconds | Performance test | ☐ |
+
+---
+
+## 3. Non-Functional Acceptance Criteria
+
+### Performance
+
+| # | Criteria | Target | Verification | Pass/Fail |
+|---|---|---|---|---|
+| NF-01 | App launch to marketplace | < 2.5 seconds | Xcode Instruments | ☐ |
+| NF-02 | API response time (P90) | < 500ms | Network Monitor | ☐ |
+| NF-03 | Memory footprint | < 200 MB | Xcode Instruments | ☐ |
+| NF-04 | Scrolling FPS | 60 FPS | Animation Instruments | ☐ |
+
+### Security
+
+| # | Criteria | Target | Verification | Pass/Fail |
+|---|---|---|---|---|
+| NF-05 | RLS on all tables | 100% tables protected | API audit | ☐ |
+| NF-06 | No secrets in iOS source | 0 instances | Static analysis | ☐ |
+| NF-07 | No PCI data stored | 0 instances | Code review + DB audit | ☐ |
+| NF-08 | Role-based access enforced | 100% | Permission matrix test | ☐ |
+
+### UX / Accessibility
+
+| # | Criteria | Target | Verification | Pass/Fail |
+|---|---|---|---|---|
+| NF-09 | Universal layout (iPhone + iPad) | No clipping | Simulator testing | ☐ |
+| NF-10 | Dynamic Type support | Scales correctly | Accessibility Inspector | ☐ |
+| NF-11 | VoiceOver labels | All interactive elements | Accessibility audit | ☐ |
+
+---
+
+## 4. Migration Acceptance Criteria
+
+| # | Criteria | Verification | Pass/Fail |
+|---|---|---|---|
+| MG-01 | All v1.0 causes migrated to donation_profiles | Record count match | ☐ |
+| MG-02 | All v1.0 donations preserved with correct data | Field-by-field comparison | ☐ |
+| MG-03 | All v1.0 admin_users migrated to users table | Record count match | ☐ |
+| MG-04 | v1.0 Edge Functions still operational | Function call test | ☐ |
+| MG-05 | No orphaned records after migration | DB integrity check | ☐ |
+| MG-06 | Rollback script tested successfully | Rollback + verify | ☐ |
+
+---
+
+## 5. UAT Sign-Off
+
+| Feature | Tested By | Date | Status | Notes |
+|---|---|---|---|---|
+| F2-01: Tax Receipt | | | ☐ Pending | |
+| F2-02: Recurring Donation | | | ☐ Pending | |
+| F2-03: Progress Bar | | | ☐ Pending | |
+| F2-04: Donor Wall | | | ☐ Pending | |
+| F2-05: AI Report | | | ☐ Pending | |
+| F2-06: Campaign Creation | | | ☐ Pending | |
+| F2-07: Marketplace | | | ☐ Pending | |
+| F2-08: Verification | | | ☐ Pending | |
+| F2-09: Dashboard | | | ☐ Pending | |
+| Migration | | | ☐ Pending | |
+| Performance | | | ☐ Pending | |
+| Security | | | ☐ Pending | |
+
+### Final Approval
+
+| Role | Approved | Date | Signature |
+|---|---|---|---|
+| Product Owner | ☐ | | |
+| Tech Lead | ☐ | | |
+| QA Lead | ☐ | | |
+| Security Lead | ☐ | | |

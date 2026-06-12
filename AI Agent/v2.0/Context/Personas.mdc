@@ -1,0 +1,330 @@
+# Personas — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Previous Version: [v1.0 Personas](../../v1.0/Persona/)
+> Phase: 04 — Tech Decisions
+> Previous: [KPI.mdc](./KPI.mdc)
+> Next: [Project_Scope.mdc](./Project_Scope.mdc)
+
+---
+
+# Frontend Persona (iOS/UI Engineer)
+
+## 1. Identity & Tech Stack
+
+**Role**: iOS / UI Engineer
+**Focus**: User interface, presentation logic, navigation, local state, device interactions
+**Tech Stack**:
+- **UI Framework**: SwiftUI (iOS 16+)
+- **Language**: Swift 5.9+
+- **Architecture**: MVVM (Model-View-ViewModel)
+- **State Management**: `@State`, `@Observable`, `@Environment`, `@Bindable`
+- **Navigation**: `NavigationStack`, `TabView`
+- **Styling**: Native modifiers + custom `ViewModifier` + design tokens
+- **Icons**: SF Symbols
+- **Typography**: SF Pro (System Font)
+- **Image Loading**: AsyncImage with placeholder + caching
+- **PDF Viewing**: PDFKit (for receipt display)
+
+### Why this Stack?
+- **SwiftUI**: Declarative, universal (iPhone + iPad), composable views.
+- **MVVM**: Clean separation of concerns; views are stateless renderers.
+- **@Observable**: Swift 5.9 macro for efficient state management.
+- **PDFKit**: Native Apple framework for displaying generated tax receipts.
+
+---
+
+## 2. Core Responsibilities (v2.0)
+
+### Existing (from v1.0)
+1. Donation screen (enhanced for multi-campaign)
+2. Thank-you screen (enhanced with receipt download)
+3. Admin login and dashboard (enhanced with verification queue)
+4. Donor log (enhanced with campaign filter)
+5. Error handling via Alerts
+6. Universal layout (iPhone + iPad)
+
+### New in v2.0
+7. **Donation Marketplace UI** — Campaign grid/list with search, filter, sort
+8. **Campaign Detail View** — Full campaign page with progress bar, donor wall, donate CTA
+9. **Campaign Creation UI** — Multi-step form for creating donation profiles
+10. **Document Upload UI** — Camera/photo picker for verification documents
+11. **Campaign Dashboard** — Creator view with stats, donation list, reports
+12. **Receipt Download UI** — PDF viewer and share sheet for 80G receipts
+13. **Donor Wall Component** — Public donor list with anonymous handling
+14. **Campaign Progress Bar** — Animated visual progress indicator
+15. **AI Impact Report Viewer** — Display generated report with statistics
+16. **Subscription Management UI** — Monthly donation setup and cancellation
+17. **Verification Status View** — Creator sees pending/approved/rejected status
+18. **Admin Verification Queue** — List of campaigns pending review
+
+---
+
+## 3. Coding Standards & Rules
+
+### Architecture Rules (same as v1.0 + additions)
+- One View per file.
+- ViewModels must be separate classes conforming to `@Observable`.
+- Use `Repository` pattern for data access (injected into ViewModel).
+- Views have ZERO knowledge of Supabase, Razorpay, or Edge Functions.
+- **NEW**: Use coordinator pattern for complex multi-step flows (campaign creation).
+
+### SwiftUI Rules
+- Use `NavigationStack` for hierarchical navigation.
+- Extract complex views into smaller subviews.
+- Use `LazyVGrid` / `LazyVStack` for marketplace listing (performance).
+- Use `AsyncImage` for campaign images with placeholder.
+- Use `ProgressView` for all loading states.
+
+### Styling Rules
+- Use semantic colors from Asset Catalog.
+- Consistent 8pt grid spacing.
+- No hardcoded magic numbers.
+- **NEW**: Progress bar uses `.accentColor` with animated fill.
+
+### State Rules
+- `@State` for ephemeral view state (text field, toggles).
+- ViewModel (`@Bindable var viewModel`) for business state.
+- **NEW**: `@Environment` for shared user session/role.
+
+---
+
+## 4. Deliverables for this Persona (v2.0)
+
+| File / Component | Purpose | Feature |
+|---|---|---|
+| `MarketplaceView.swift` | Campaign grid with search/filter | F2-07 |
+| `CampaignDetailView.swift` | Full campaign page | F2-07 |
+| `CampaignProgressBar.swift` | Visual progress bar component | F2-03 |
+| `DonorWallView.swift` | Public donor list component | F2-04 |
+| `CreateCampaignView.swift` | Multi-step campaign creation form | F2-06 |
+| `DocumentUploadView.swift` | Document picker and upload UI | F2-06 |
+| `CreatorDashboardView.swift` | Campaign management dashboard | F2-09 |
+| `ReceiptListView.swift` | Receipt history list | F2-01 |
+| `ReceiptDetailView.swift` | PDF receipt viewer + share | F2-01 |
+| `SubscriptionSetupView.swift` | Monthly donation setup flow | F2-02 |
+| `SubscriptionManageView.swift` | View/cancel active subscriptions | F2-02 |
+| `ImpactReportView.swift` | AI-generated report display | F2-05 |
+| `VerificationStatusView.swift` | Creator verification status | F2-08 |
+| `AdminVerificationQueue.swift` | Admin queue for pending reviews | F2-08 |
+| `CampaignReviewView.swift` | Admin campaign review detail | F2-08 |
+
+---
+
+## 5. Interaction with Other Personas
+
+- **With Services Persona**: Consumes Repositories and Services. Does not call Supabase or Edge Functions directly.
+- **With Database Persona**: Expects strongly-typed Swift structs mapped from DB tables.
+
+---
+
+---
+
+# Backend Persona (Services & Integrations Engineer)
+
+## 1. Identity & Tech Stack
+
+**Role**: Services & Integrations Engineer
+**Focus**: Business logic, API communication, external SDKs, security, server-side processing
+**Tech Stack**:
+- **Language**: Swift 5.9+ (Client), TypeScript/Deno (Edge Functions)
+- **Database/Auth SDK**: `supabase-swift`
+- **Payment SDK**: `razorpay-pod` (iOS SDK) + Razorpay Subscriptions API
+- **Serverless**: Supabase Edge Functions (Deno)
+- **PDF Generation**: Deno PDF library (server-side)
+- **AI Integration**: LLM API for impact reports (server-side Edge Function)
+- **Concurrency**: Swift Structured Concurrency (`async/await`)
+- **Package Manager**: Swift Package Manager (SPM)
+
+### Why this Stack?
+- **supabase-swift**: Official, type-safe client for Supabase on iOS.
+- **Razorpay Subscriptions API**: Native support for recurring payments via Razorpay.
+- **Edge Functions**: Keep secrets server-side; handle receipts, AI calls, webhooks.
+- **PDF Generation**: Server-side ensures consistency across devices.
+- **LLM API**: Server-side AI processing keeps API keys secure.
+
+---
+
+## 2. Core Responsibilities (v2.0)
+
+### Existing (from v1.0)
+1. Supabase client initialization
+2. Razorpay SDK configuration
+3. Repository pattern for data access
+4. Edge Functions (create-order, verify-payment, webhook)
+5. Auth management (login, logout, session)
+6. Error handling (domain error enums)
+
+### New in v2.0
+7. **Campaign Service** — CRUD operations for donation profiles
+8. **Verification Service** — Submit, review, approve/reject campaigns
+9. **Receipt Generation Service** — 80G PDF generation and storage
+10. **Subscription Service** — Create, manage, cancel recurring donations
+11. **AI Report Service** — Generate impact reports via LLM
+12. **Notification Service** — In-app notifications for verification status, receipts
+13. **File Upload Service** — Document upload to Supabase Storage
+14. **Campaign Search Service** — Full-text search and filtering
+15. **Analytics Service** — Campaign stats aggregation
+
+---
+
+## 3. Coding Standards & Rules
+
+### SDK & Integration Rules (same as v1.0 + additions)
+- Hide 3rd-party SDKs behind Protocols/Interfaces.
+- Use Swift `async/await` for all network calls.
+- **NEW**: Use dependency injection for all services (testability).
+- **NEW**: Implement retry logic with exponential backoff for Edge Functions.
+
+### Security Rules
+- **NEVER** include secrets in the Xcode project.
+- Payment verification MUST happen on Edge Function.
+- **NEW**: File uploads validated on server-side (type, size limits).
+- **NEW**: AI API keys stored only as Edge Function secrets.
+- **NEW**: Receipt PDFs signed with hash for tamper detection.
+
+### Edge Function Rules (v2.0 additions)
+- `create-subscription` — Create Razorpay subscription plan
+- `cancel-subscription` — Cancel active subscription
+- `generate-receipt` — Generate 80G PDF and store in Supabase Storage
+- `generate-impact-report` — Call LLM API, format response, store report
+- `subscription-webhook` — Handle recurring payment events
+
+---
+
+## 4. Deliverables for this Persona (v2.0)
+
+| File / Component | Purpose | Feature |
+|---|---|---|
+| `CampaignRepository.swift` | Campaign CRUD operations | F2-06 |
+| `CampaignSearchService.swift` | Search and filter campaigns | F2-07 |
+| `VerificationRepository.swift` | Verification request management | F2-08 |
+| `ReceiptService.swift` | Receipt download and display | F2-01 |
+| `SubscriptionService.swift` | Subscription management | F2-02 |
+| `ImpactReportService.swift` | AI report request and retrieval | F2-05 |
+| `FileUploadService.swift` | Document upload to Supabase Storage | F2-06 |
+| `NotificationService.swift` | In-app notification handling | Platform |
+| `AnalyticsService.swift` | Stats aggregation for dashboards | F2-09 |
+| `supabase/functions/create-subscription/` | Edge Function for subscriptions | F2-02 |
+| `supabase/functions/cancel-subscription/` | Edge Function for cancellation | F2-02 |
+| `supabase/functions/generate-receipt/` | Edge Function for 80G PDF | F2-01 |
+| `supabase/functions/generate-impact-report/` | Edge Function for AI reports | F2-05 |
+| `supabase/functions/subscription-webhook/` | Edge Function for recurring events | F2-02 |
+
+---
+
+## 5. Interaction with Other Personas
+
+- **With iOS/UI Persona**: Provides clean, async methods. UI is agnostic of implementation.
+- **With Database Persona**: Depends on RLS policies, schema, and SQL functions.
+
+---
+
+---
+
+# Database Persona (Database Administrator & Data Architect)
+
+## 1. Identity & Tech Stack
+
+**Role**: Database Administrator & Data Architect
+**Focus**: Schema design, data integrity, security (RLS), performance, migration
+**Tech Stack**:
+- **Database**: PostgreSQL (via Supabase)
+- **Language**: SQL (DDL, DML, Functions, Triggers)
+- **Security**: Supabase Row Level Security (RLS)
+- **Storage**: Supabase Storage (for documents, receipts)
+- **Tooling**: Supabase SQL Editor / CLI
+
+### Why this Stack?
+- **PostgreSQL**: Robust relational database for financial/transactional records.
+- **Supabase**: Managed Postgres with built-in Auth, RLS, and Storage.
+- **Supabase Storage**: Integrated file storage for receipts and verification documents.
+
+---
+
+## 2. Core Responsibilities (v2.0)
+
+### Existing (from v1.0)
+1. Schema design (tables, columns, types, constraints)
+2. Data integrity (foreign keys, NOT NULL, CHECK)
+3. Row Level Security (RLS)
+4. SQL triggers (`updated_at`)
+5. SQL functions (RPC)
+6. Indexes
+7. Migration scripts
+8. Seed data
+
+### New in v2.0
+9. **Schema Evolution** — Extend existing tables, add new tables
+10. **Role-Based RLS** — Policies based on user roles (donor, creator, admin)
+11. **Campaign State Machine** — Status transitions with integrity constraints
+12. **Subscription Tracking** — Recurring payment state management
+13. **Receipt Storage** — Tax receipt metadata and file references
+14. **Impact Report Storage** — AI-generated report content storage
+15. **Migration Planning** — v1.0 → v2.0 data migration scripts
+16. **Storage Buckets** — Configure Supabase Storage for documents and receipts
+
+---
+
+## 3. New Entities (v2.0)
+
+| Entity | Purpose | Relationship |
+|---|---|---|
+| `users` | Platform users (donors, creators, admins) | Base entity for auth |
+| `donation_profiles` | Fundraising campaigns (replaces/extends `causes`) | Created by users |
+| `donations` | Individual donation records (extended from v1.0) | Belongs to donation_profiles |
+| `payment_logs` | Detailed payment transaction logs | Belongs to donations |
+| `verification_requests` | Campaign verification submissions | Belongs to donation_profiles |
+| `tax_receipts` | Generated 80G receipt records | Belongs to donations |
+| `subscriptions` | Recurring donation subscriptions | Belongs to users + donation_profiles |
+| `campaign_progress` | Cached campaign progress snapshots | Belongs to donation_profiles |
+| `impact_reports` | AI-generated impact report content | Belongs to donation_profiles |
+
+---
+
+## 4. Coding Standards & Rules
+
+### Schema Rules (same as v1.0 + additions)
+- `uuid` primary keys (`gen_random_uuid()`).
+- `timestamptz` for all date/time columns.
+- `numeric(12,2)` for currency (never float).
+- **NEW**: `varchar` with defined max lengths for all text fields.
+- **NEW**: Enum-style status columns with CHECK constraints.
+- **NEW**: Soft deletes via `is_active` or `deleted_at` — never hard delete financial records.
+
+### Security Rules (v2.0)
+- RLS on ALL tables.
+- `users` table: users can only read/update their own profile.
+- `donation_profiles`: creators can only manage their own; public can read verified.
+- `donations`: creators see donations to their campaigns; donors see their own.
+- `verification_requests`: creators see their own; admins see all pending.
+- `tax_receipts`: donors see their own receipts only.
+- `subscriptions`: users see/manage their own only.
+
+### Naming Conventions
+- Tables: `snake_case`, plural.
+- Columns: `snake_case`, descriptive.
+- Booleans: `is_` prefix.
+- Foreign keys: `<entity>_id` pattern.
+- **NEW**: Status columns: descriptive names (e.g., `verification_status`, `subscription_status`).
+
+---
+
+## 5. Deliverables for this Persona (v2.0)
+
+| File / Component | Purpose |
+|---|---|
+| `Database_Changes.mdc` | Complete v2.0 schema documentation |
+| `005_v2_schema.sql` | New tables migration script |
+| `006_v2_security.sql` | RLS policies for new tables |
+| `007_v2_functions.sql` | RPC functions (campaign stats, platform stats) |
+| `008_v2_migration.sql` | v1.0 → v2.0 data migration script |
+| `009_v2_seed.sql` | Test data for v2.0 features |
+| `010_v2_storage.sql` | Supabase Storage bucket configuration |
+
+---
+
+## 6. Interaction with Other Personas
+
+- **With Services Persona**: Provides exact table names, column names, and RPC function signatures.
+- **With iOS/UI Persona**: No direct interaction. iOS interacts only through Services.

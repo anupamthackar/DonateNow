@@ -1,0 +1,192 @@
+# Project Boundaries — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Previous Version: [v1.0 Project Boundaries](../../v1.0/Project_Boundaries.mdc)
+> Phase: 06 — Development Rules
+> Previous: [Project_Scope.mdc](./Project_Scope.mdc)
+> Related: [Save_Token.mdc](./Save_Token.mdc)
+
+---
+
+## 1. Development Rules (Strict)
+
+1. **Do not generate code before requirements approval.**
+   - Read PRD → KPI → Personas → Architecture → Database Changes → API Changes before writing code.
+   - Never assume a requirement — ask if ambiguous.
+
+2. **Do not execute commands without approval.**
+   - All terminal commands must be presented for approval.
+   - Especially: SPM resolutions, Deno deployments, DB migrations, storage bucket creation.
+
+3. **Do not modify unrelated files.**
+   - If fixing a bug in `CampaignRepository.swift`, don't touch `MarketplaceView.swift` unless necessary.
+   - Scope changes to the requested file(s) only.
+
+4. **Avoid assumptions.**
+   - Don't assume SDK behavior — verify with docs.
+   - Don't assume database schema — verify with Database_Changes.mdc.
+   - Don't assume API behavior — verify with API_Changes.mdc.
+
+5. **Follow TDD methodology.**
+   - Write failing test first (Red).
+   - Implement minimum code to pass (Green).
+   - Refactor without breaking tests (Refactor).
+   - Reference: [TDD_Strategy.mdc](../Testing/TDD_Strategy.mdc)
+
+6. **Maintain backward compatibility.**
+   - v1.0 functionality must never be broken by v2.0 changes.
+   - All v1.0 data must be preserved during migration.
+   - v1.0 Edge Functions must remain operational during transition.
+
+7. **Keep architecture modular.**
+   - New features must follow MVVM + Repository pattern.
+   - Services must be injected, not hardcoded.
+   - Edge Functions must be independently deployable.
+
+---
+
+## 2. Coding Standards
+
+1. **Follow the Personas strictly.**
+   - iOS/UI: [Personas.mdc → Frontend](./Personas.mdc)
+   - Services: [Personas.mdc → Backend](./Personas.mdc)
+   - Database: [Personas.mdc → Database](./Personas.mdc)
+
+2. **Follow the Architecture strictly.**
+   - System architecture: [System_Architecture.mdc](../Architecture/System_Architecture.mdc)
+   - Database schema: [Database_Changes.mdc](../Architecture/Database_Changes.mdc)
+   - API design: [API_Changes.mdc](../Architecture/API_Changes.mdc)
+
+3. **Follow TDD for all new features.**
+   - Strategy: [TDD_Strategy.mdc](../Testing/TDD_Strategy.mdc)
+   - Test cases: [Test_Cases.mdc](../Testing/Test_Cases.mdc)
+
+4. **Follow Error Handling patterns.**
+   - Domain error enums for new services.
+   - Graceful degradation for AI and external service failures.
+
+5. **Follow Security rules.**
+   - RLS on all new tables.
+   - Role-based access control.
+   - No secrets in iOS code.
+   - File upload validation.
+
+---
+
+## 3. AI Agent Decision Order (v2.0)
+
+When making implementation decisions, follow this priority:
+
+```
+1. Project_Boundaries.mdc    ← What NOT to do (highest priority)
+2. Security rules             ← Security overrides convenience
+3. PRD.mdc                   ← Business requirements are source of truth
+4. KPI.mdc                   ← Success criteria validate PRD
+5. System_Architecture.mdc   ← System design follows PRD
+6. Database_Changes.mdc      ← Data model follows architecture
+7. API_Changes.mdc           ← API design follows data model
+8. Personas.mdc              ← Tech decisions follow PRD + architecture
+9. TDD_Strategy.mdc          ← Tests drive implementation
+10. Migration_Plan.mdc       ← Migration follows schema
+11. Feature_Implementation_Plan.mdc ← Order of implementation
+```
+
+**Never skip levels. Never contradict a higher-priority document.**
+
+---
+
+## 4. File Modification Rules
+
+1. **Never modify context files without approval.**
+   - PRD, KPI, Personas, Scope, Boundaries — read-only during development.
+   - Changes require explicit user request.
+
+2. **Never modify v1.0 context files.**
+   - v1.0 documentation is archived and immutable.
+   - All v2.0 changes go in v2.0 directory only.
+
+3. **Do not create files outside the defined architecture.**
+   - Folder structure defined in [System_Architecture.mdc](../Architecture/System_Architecture.mdc).
+   - New files must fit the v2.0 project structure.
+
+4. **Do not modify v1.0 database tables directly.**
+   - Use migration scripts to evolve the schema.
+   - Additive changes only — never drop columns from existing tables.
+
+---
+
+## 5. Communication Rules
+
+1. **Explain before implementing.**
+   - State what you plan to do before writing code.
+   - Cite which context file drives the decision.
+
+2. **Report blockers immediately.**
+   - Missing information, ambiguous requirements, SDK conflicts, migration risks.
+
+3. **Confirm completion of each feature.**
+   - Reference the KPI(s) it satisfies.
+   - Reference the test cases that verify it.
+   - State what verification was done.
+
+---
+
+## 6. Quality Gates
+
+### Before Any Code is Written
+- [ ] PRD reviewed and understood
+- [ ] KPIs identified for the feature
+- [ ] Persona rules reviewed
+- [ ] Architecture section reviewed
+- [ ] Database changes reviewed (if data-related)
+- [ ] API changes reviewed (if API-related)
+- [ ] TDD test cases identified
+- [ ] Migration impact assessed
+
+### Before Feature is Complete
+- [ ] Code follows MVVM architecture
+- [ ] Tests written and passing (TDD)
+- [ ] Error states handled and presented to user
+- [ ] Loading states implemented
+- [ ] Universal layout verified (iPhone + iPad)
+- [ ] Associated KPIs can be verified
+- [ ] Backward compatibility confirmed
+- [ ] RLS policies applied (if new table)
+
+### Before Phase Delivery
+- [ ] All phase features complete
+- [ ] All phase KPIs pass
+- [ ] All security KPIs pass for the phase
+- [ ] Integration tests pass
+- [ ] Performance profiling done
+- [ ] Migration script tested (if applicable)
+
+### Before v2.0 Launch
+- [ ] All v2.0 KPIs pass
+- [ ] All security KPIs pass
+- [ ] v1.0 data migration verified
+- [ ] Build succeeds without warnings
+- [ ] No hardcoded secrets in source
+- [ ] Accessibility audit passed
+
+---
+
+## 7. Prohibited Actions
+
+| # | Action | Reason |
+|---|---|---|
+| 1 | Store payment card/UPI data locally | PCI violation |
+| 2 | Expose Supabase service_role key to iOS | Security breach |
+| 3 | Perform Razorpay verification on device | Payment fraud risk |
+| 4 | Disable RLS for convenience | Data exposure |
+| 5 | Force unwrap Optionals (`!`) without checks | App crashes |
+| 6 | Hardcode API keys in Swift files | Use Xcode Configurations |
+| 7 | Put network logic in SwiftUI Views | Violates MVVM |
+| 8 | Build features not in PRD v2.0 | Scope creep |
+| 9 | Heavy computation on Main Thread | Freezes UI |
+| 10 | Skip error alerts for user actions | Confuses user |
+| 11 | Modify v1.0 context files | Version integrity |
+| 12 | Drop existing database columns | Data loss risk |
+| 13 | Skip TDD for new features | Quality regression |
+| 14 | Store AI API keys in iOS app | Security breach |
+| 15 | Allow unverified campaigns on marketplace | Trust violation |

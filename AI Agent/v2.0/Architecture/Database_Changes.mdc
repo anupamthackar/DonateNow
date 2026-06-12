@@ -1,0 +1,445 @@
+# Database Changes — DonateNow v2.0
+
+> Version: 2.0 — Multi-Cause Donation Platform
+> Previous Version: [v1.0 ERD](../../v1.0/Extended/ERD.mdc)
+> Reference: [PRD.mdc](../Context/PRD.mdc) | [Personas.mdc](../Context/Personas.mdc) | [User_Roles.mdc](../Context/User_Roles_and_Access_Control.mdc)
+
+---
+
+## 1. Schema Evolution Overview
+
+### v1.0 Schema (Existing)
+```
+causes (3 columns core)
+donations (14 columns)
+admin_users (6 columns)
+```
+
+### v2.0 Schema (Target)
+```
+users (NEW — replaces admin_users concept)
+donation_profiles (NEW — extends causes)
+donations (EXTENDED — new columns)
+payment_logs (NEW)
+verification_requests (NEW)
+tax_receipts (NEW)
+subscriptions (NEW)
+campaign_progress (NEW)
+impact_reports (NEW)
+causes (PRESERVED — backward compat)
+admin_users (PRESERVED — backward compat)
+```
+
+---
+
+## 2. Entity Relationship Diagram (v2.0)
+
+```
+┌──────────────────────┐
+│       users          │
+│──────────────────────│
+│ id (PK, UUID)        │
+│ email                │         ┌──────────────────────────┐
+│ name                 │         │    donation_profiles     │
+│ phone                │         │──────────────────────────│
+│ role                 │    1:N  │ id (PK, UUID)            │
+│ avatar_url           ├────────►│ creator_id (FK → users)  │
+│ supabase_auth_id(FK) │         │ title                    │
+│ is_active            │         │ description              │
+│ created_at           │         │ category                 │
+│ updated_at           │         │ target_amount            │
+└──────────┬───────────┘         │ raised_amount            │
+           │                     │ image_url                │
+           │                     │ verification_status      │
+           │                     │ is_active                │
+           │                     │ start_date               │
+           │                     │ end_date                 │
+           │                     │ created_at               │
+           │                     │ updated_at               │
+           │                     └──────────┬───────────────┘
+           │                                │
+           │                     ┌──────────┼────────────────────────────┐
+           │                     │ 1:N      │ 1:N                       │ 1:N
+           │                     ▼          ▼                           ▼
+           │          ┌─────────────────┐  ┌────────────────────┐  ┌──────────────────┐
+           │          │verification_    │  │    donations       │  │  impact_reports   │
+           │          │requests         │  │────────────────────│  │──────────────────│
+           │          │─────────────────│  │ id (PK, UUID)      │  │ id (PK, UUID)    │
+           │          │ id (PK, UUID)   │  │ campaign_id (FK)   │  │ campaign_id (FK) │
+           │          │ campaign_id(FK) │  │ donor_user_id (FK) │  │ content          │
+           │          │ documents_url[] │  │ donor_name         │  │ statistics_json  │
+           │          │ status          │  │ donor_email        │  │ generated_at     │
+           │          │ reviewer_id(FK) │  │ amount             │  │ created_at       │
+           │          │ review_notes    │  │ status             │  └──────────────────┘
+           │          │ submitted_at    │  │ is_anonymous       │
+           │          │ reviewed_at     │  │ subscription_id    │
+           │          │ created_at      │  │ receipt_id         │
+           │          └─────────────────┘  │ razorpay_order_id  │
+           │                               │ razorpay_payment_id│
+           │                               │ payment_method     │
+           │                               │ notes              │
+           │                               │ created_at         │
+           │                               │ updated_at         │
+           │                               └────────┬───────────┘
+           │                                        │
+           │                          ┌─────────────┼─────────────┐
+           │                          │ 1:N         │ 1:1         │
+           │                          ▼             ▼             │
+           │               ┌──────────────────┐  ┌───────────────┐│
+           │               │  payment_logs    │  │ tax_receipts  ││
+           │               │──────────────────│  │───────────────││
+           │               │ id (PK, UUID)    │  │ id (PK, UUID) ││
+           │               │ donation_id (FK) │  │ donation_id   ││
+           │               │ event_type       │  │ receipt_number││
+           │               │ amount           │  │ pdf_url       ││
+           │               │ status           │  │ ngo_name      ││
+           │               │ razorpay_event_id│  │ ngo_80g_number││
+           │               │ metadata_json    │  │ financial_year││
+           │               │ created_at       │  │ created_at    ││
+           │               └──────────────────┘  └───────────────┘│
+           │                                                       │
+           │          ┌────────────────────────────────────────────┘
+           │ 1:N      │
+           ▼          │
+┌──────────────────────┐
+│    subscriptions     │
+│──────────────────────│
+│ id (PK, UUID)        │
+│ user_id (FK → users) │
+│ campaign_id (FK)     │
+│ razorpay_sub_id      │
+│ amount               │
+│ currency             │
+│ frequency            │
+│ status               │
+│ next_charge_date     │
+│ retry_count          │
+│ created_at           │
+│ updated_at           │
+│ cancelled_at         │
+└──────────────────────┘
+```
+
+---
+
+## 3. New Table Definitions
+
+### `users` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Unique user ID |
+| email | VARCHAR(255) | UNIQUE, NOT NULL | User email |
+| name | VARCHAR(255) | NOT NULL | Display name |
+| phone | VARCHAR(20) | NULLABLE | Phone number |
+| role | VARCHAR(20) | NOT NULL, DEFAULT 'donor' | 'donor', 'creator', 'admin' |
+| avatar_url | TEXT | NULLABLE | Profile image URL |
+| supabase_auth_id | UUID | FK → auth.users(id), UNIQUE | Supabase Auth link |
+| is_active | BOOLEAN | DEFAULT true | Account active flag |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Registration time |
+| updated_at | TIMESTAMPTZ | DEFAULT now() | Last update time |
+
+### `donation_profiles` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Campaign ID |
+| creator_id | UUID | FK → users(id), NOT NULL | Campaign creator |
+| title | VARCHAR(255) | NOT NULL | Campaign title |
+| description | TEXT | NOT NULL | Campaign description |
+| category | VARCHAR(100) | NULLABLE | Campaign category |
+| target_amount | DECIMAL(12,2) | NOT NULL, CHECK > 0 | Fundraising goal |
+| raised_amount | DECIMAL(12,2) | DEFAULT 0 | Amount raised |
+| image_url | TEXT | NULLABLE | Campaign image |
+| verification_status | VARCHAR(20) | DEFAULT 'draft' | Verification state |
+| is_active | BOOLEAN | DEFAULT true | Active/inactive flag |
+| start_date | TIMESTAMPTZ | DEFAULT now() | Campaign start |
+| end_date | TIMESTAMPTZ | NULLABLE | Campaign end (optional) |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Creation time |
+| updated_at | TIMESTAMPTZ | DEFAULT now() | Last update time |
+
+### `donations` Table (Extended)
+| Column | Type | Constraints | Description | New? |
+|---|---|---|---|---|
+| id | UUID | PK | Unique donation ID | v1.0 |
+| cause_id | UUID | FK → causes(id) | v1.0 backward compat | v1.0 |
+| campaign_id | UUID | FK → donation_profiles(id) | v2.0 campaign link | ✅ |
+| donor_user_id | UUID | FK → users(id), NULLABLE | Registered donor | ✅ |
+| donor_name | VARCHAR(255) | NOT NULL | Donor name | v1.0 |
+| donor_email | VARCHAR(255) | NOT NULL | Donor email | v1.0 |
+| donor_phone | VARCHAR(20) | NULLABLE | Donor phone | v1.0 |
+| amount | DECIMAL(12,2) | NOT NULL, CHECK > 0 | Amount | v1.0 |
+| currency | VARCHAR(3) | DEFAULT 'INR' | Currency | v1.0 |
+| status | VARCHAR(20) | DEFAULT 'initiated' | Payment status | v1.0 |
+| is_anonymous | BOOLEAN | DEFAULT false | Donor wall privacy | ✅ |
+| subscription_id | UUID | FK → subscriptions(id) | Recurring link | ✅ |
+| receipt_id | UUID | FK → tax_receipts(id) | Receipt link | ✅ |
+| razorpay_order_id | VARCHAR(255) | UNIQUE, NULLABLE | Razorpay order | v1.0 |
+| razorpay_payment_id | VARCHAR(255) | UNIQUE, NULLABLE | Razorpay payment | v1.0 |
+| razorpay_signature | TEXT | NULLABLE | Payment signature | v1.0 |
+| payment_method | VARCHAR(50) | NULLABLE | Method | v1.0 |
+| notes | TEXT | NULLABLE | Donor notes | v1.0 |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Created | v1.0 |
+| updated_at | TIMESTAMPTZ | DEFAULT now() | Updated | v1.0 |
+
+### `payment_logs` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Log ID |
+| donation_id | UUID | FK → donations(id), NOT NULL | Associated donation |
+| event_type | VARCHAR(50) | NOT NULL | 'payment.captured', 'payment.failed', etc. |
+| amount | DECIMAL(12,2) | NOT NULL | Amount |
+| status | VARCHAR(20) | NOT NULL | Event status |
+| razorpay_event_id | VARCHAR(255) | NULLABLE | Razorpay event reference |
+| metadata_json | JSONB | NULLABLE | Additional event metadata |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Log time |
+
+### `verification_requests` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Request ID |
+| campaign_id | UUID | FK → donation_profiles(id), NOT NULL | Campaign |
+| documents_url | TEXT[] | NOT NULL | Array of document URLs |
+| status | VARCHAR(20) | DEFAULT 'pending' | 'pending', 'approved', 'rejected' |
+| reviewer_id | UUID | FK → users(id), NULLABLE | Admin who reviewed |
+| review_notes | TEXT | NULLABLE | Review comments/reason |
+| submitted_at | TIMESTAMPTZ | DEFAULT now() | Submission time |
+| reviewed_at | TIMESTAMPTZ | NULLABLE | Review time |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Created |
+
+### `tax_receipts` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Receipt ID |
+| donation_id | UUID | FK → donations(id), UNIQUE, NOT NULL | One receipt per donation |
+| receipt_number | VARCHAR(50) | UNIQUE, NOT NULL | 'DN-YYYY-NNNNN' format |
+| pdf_url | TEXT | NOT NULL | Supabase Storage URL |
+| ngo_name | VARCHAR(255) | NOT NULL | NGO name on receipt |
+| ngo_80g_number | VARCHAR(100) | NOT NULL | 80G registration number |
+| financial_year | VARCHAR(10) | NOT NULL | 'FY2025-26' format |
+| amount | DECIMAL(12,2) | NOT NULL | Donation amount |
+| donor_name | VARCHAR(255) | NOT NULL | Donor name on receipt |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Generation time |
+
+### `subscriptions` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Subscription ID |
+| user_id | UUID | FK → users(id), NOT NULL | Subscriber |
+| campaign_id | UUID | FK → donation_profiles(id), NOT NULL | Campaign |
+| razorpay_sub_id | VARCHAR(255) | UNIQUE, NOT NULL | Razorpay subscription ID |
+| amount | DECIMAL(12,2) | NOT NULL, CHECK > 0 | Monthly amount |
+| currency | VARCHAR(3) | DEFAULT 'INR' | Currency |
+| frequency | VARCHAR(20) | DEFAULT 'monthly' | Payment frequency |
+| status | VARCHAR(20) | DEFAULT 'active' | 'active', 'paused', 'cancelled', 'expired' |
+| next_charge_date | TIMESTAMPTZ | NULLABLE | Next payment date |
+| retry_count | INTEGER | DEFAULT 0 | Failed payment retry count |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Created |
+| updated_at | TIMESTAMPTZ | DEFAULT now() | Updated |
+| cancelled_at | TIMESTAMPTZ | NULLABLE | Cancellation time |
+
+### `campaign_progress` Table (Optional — Cached Snapshots)
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Snapshot ID |
+| campaign_id | UUID | FK → donation_profiles(id), NOT NULL | Campaign |
+| total_raised | DECIMAL(12,2) | NOT NULL | Total raised at snapshot |
+| total_donors | INTEGER | NOT NULL | Donor count at snapshot |
+| percentage | DECIMAL(5,2) | NOT NULL | Progress percentage |
+| snapshot_date | DATE | NOT NULL | Snapshot date |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Created |
+
+### `impact_reports` Table
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| id | UUID | PK, DEFAULT gen_random_uuid() | Report ID |
+| campaign_id | UUID | FK → donation_profiles(id), NOT NULL | Campaign |
+| content | TEXT | NOT NULL | AI-generated report text |
+| statistics_json | JSONB | NOT NULL | Structured stats data |
+| date_range_start | DATE | NOT NULL | Report period start |
+| date_range_end | DATE | NOT NULL | Report period end |
+| generated_at | TIMESTAMPTZ | DEFAULT now() | Generation time |
+| created_at | TIMESTAMPTZ | DEFAULT now() | Created |
+
+---
+
+## 4. Status Enums
+
+### Verification Status (`donation_profiles.verification_status`)
+| Status | Description | Triggered By |
+|---|---|---|
+| `draft` | Campaign created, not submitted | Creator creates campaign |
+| `pending` | Submitted for verification | Creator submits with documents |
+| `verified` | Admin approved | Admin approves |
+| `rejected` | Admin rejected | Admin rejects with reason |
+| `suspended` | Admin suspended post-verification | Admin suspends |
+
+### Subscription Status (`subscriptions.status`)
+| Status | Description | Triggered By |
+|---|---|---|
+| `active` | Subscription active, payments ongoing | Successful subscription creation |
+| `paused` | Temporarily paused (failed payments) | 3 consecutive payment failures |
+| `cancelled` | User-initiated cancellation | User cancels |
+| `expired` | Campaign ended | Campaign end date passed |
+
+### Donation Status (Extended from v1.0)
+| Status | Description | v1.0? |
+|---|---|---|
+| `initiated` | Order created | ✅ |
+| `pending` | Payment completed, verifying | ✅ |
+| `completed` | Payment confirmed | ✅ |
+| `failed` | Payment failed | ✅ |
+| `refunded` | Payment refunded | ✅ |
+| `recurring` | Part of active subscription | ✅ New |
+
+---
+
+## 5. Indexes (v2.0)
+
+```sql
+-- Users
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_supabase_auth_id ON users(supabase_auth_id);
+CREATE INDEX idx_users_role ON users(role);
+
+-- Donation Profiles
+CREATE INDEX idx_profiles_creator_id ON donation_profiles(creator_id);
+CREATE INDEX idx_profiles_verification_status ON donation_profiles(verification_status);
+CREATE INDEX idx_profiles_is_active ON donation_profiles(is_active);
+CREATE INDEX idx_profiles_category ON donation_profiles(category);
+CREATE INDEX idx_profiles_title_search ON donation_profiles USING gin(to_tsvector('english', title || ' ' || description));
+
+-- Donations (new indexes)
+CREATE INDEX idx_donations_campaign_id ON donations(campaign_id);
+CREATE INDEX idx_donations_donor_user_id ON donations(donor_user_id);
+CREATE INDEX idx_donations_subscription_id ON donations(subscription_id);
+CREATE INDEX idx_donations_is_anonymous ON donations(is_anonymous);
+
+-- Payment Logs
+CREATE INDEX idx_payment_logs_donation_id ON payment_logs(donation_id);
+CREATE INDEX idx_payment_logs_event_type ON payment_logs(event_type);
+CREATE INDEX idx_payment_logs_created_at ON payment_logs(created_at DESC);
+
+-- Verification Requests
+CREATE INDEX idx_verification_campaign_id ON verification_requests(campaign_id);
+CREATE INDEX idx_verification_status ON verification_requests(status);
+CREATE INDEX idx_verification_reviewer_id ON verification_requests(reviewer_id);
+
+-- Tax Receipts
+CREATE INDEX idx_receipts_donation_id ON tax_receipts(donation_id);
+CREATE INDEX idx_receipts_receipt_number ON tax_receipts(receipt_number);
+
+-- Subscriptions
+CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX idx_subscriptions_campaign_id ON subscriptions(campaign_id);
+CREATE INDEX idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX idx_subscriptions_next_charge ON subscriptions(next_charge_date);
+
+-- Impact Reports
+CREATE INDEX idx_reports_campaign_id ON impact_reports(campaign_id);
+
+-- Campaign Progress
+CREATE INDEX idx_progress_campaign_id ON campaign_progress(campaign_id);
+CREATE INDEX idx_progress_snapshot_date ON campaign_progress(snapshot_date DESC);
+```
+
+---
+
+## 6. SQL Functions (v2.0)
+
+```sql
+-- Get campaign stats for creator dashboard
+CREATE OR REPLACE FUNCTION get_campaign_stats(p_campaign_id UUID)
+RETURNS JSON AS $$
+BEGIN
+  RETURN (
+    SELECT json_build_object(
+      'total_raised', COALESCE(SUM(amount), 0),
+      'total_donors', COUNT(DISTINCT donor_email),
+      'total_donations', COUNT(*),
+      'avg_donation', COALESCE(AVG(amount), 0),
+      'latest_donation', MAX(created_at)
+    )
+    FROM donations
+    WHERE campaign_id = p_campaign_id AND status = 'completed'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Get platform-wide stats for admin dashboard
+CREATE OR REPLACE FUNCTION get_platform_stats()
+RETURNS JSON AS $$
+BEGIN
+  RETURN (
+    SELECT json_build_object(
+      'total_campaigns', (SELECT COUNT(*) FROM donation_profiles WHERE is_active = true),
+      'verified_campaigns', (SELECT COUNT(*) FROM donation_profiles WHERE verification_status = 'verified'),
+      'pending_verifications', (SELECT COUNT(*) FROM verification_requests WHERE status = 'pending'),
+      'total_donations', (SELECT COUNT(*) FROM donations WHERE status = 'completed'),
+      'total_raised', (SELECT COALESCE(SUM(amount), 0) FROM donations WHERE status = 'completed'),
+      'total_subscribers', (SELECT COUNT(*) FROM subscriptions WHERE status = 'active'),
+      'total_users', (SELECT COUNT(*) FROM users WHERE is_active = true)
+    )
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Auto-update raised_amount on donation completion
+CREATE OR REPLACE FUNCTION update_campaign_raised_amount()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.status = 'completed' AND (OLD.status IS NULL OR OLD.status != 'completed') THEN
+    UPDATE donation_profiles
+    SET raised_amount = raised_amount + NEW.amount
+    WHERE id = NEW.campaign_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_raised_amount
+  AFTER INSERT OR UPDATE ON donations
+  FOR EACH ROW EXECUTE FUNCTION update_campaign_raised_amount();
+
+-- Generate receipt number sequence
+CREATE SEQUENCE IF NOT EXISTS receipt_number_seq START 1;
+
+CREATE OR REPLACE FUNCTION generate_receipt_number()
+RETURNS VARCHAR AS $$
+DECLARE
+  v_year TEXT;
+  v_seq INTEGER;
+BEGIN
+  v_year := TO_CHAR(now(), 'YYYY');
+  v_seq := nextval('receipt_number_seq');
+  RETURN 'DN-' || v_year || '-' || LPAD(v_seq::TEXT, 5, '0');
+END;
+$$ LANGUAGE plpgsql;
+```
+
+---
+
+## 7. Migration Strategy
+
+### Migration Approach: Additive (Non-Destructive)
+
+1. **Create new tables** — no changes to existing v1.0 tables initially.
+2. **Add new columns** to `donations` table (additive only).
+3. **Migrate `causes` → `donation_profiles`** — copy data, keep original table.
+4. **Migrate `admin_users` → `users`** — copy data, keep original table.
+5. **Populate `users`** from existing donor email records (de-duplicated).
+
+> Full migration plan: [Migration_Plan.mdc](../Implementation/Migration_Plan.mdc)
+
+---
+
+## 8. Database Rules (v2.0)
+
+1. No hard deletes — use `is_active` flag or `cancelled_at` timestamp.
+2. Financial records (`donations`, `payment_logs`, `tax_receipts`) are **immutable**.
+3. Every record has `created_at` (and `updated_at` where applicable).
+4. All foreign keys explicitly defined with appropriate ON DELETE behavior.
+5. Indexes on all frequently queried columns.
+6. `raised_amount` updated via trigger, never by direct client write.
+7. Status transitions follow defined state machines.
+8. RLS enabled on ALL tables — no exceptions.
+9. `documents_url` stored as TEXT array — actual files in Supabase Storage.
+10. `statistics_json` uses JSONB for flexible AI report data.

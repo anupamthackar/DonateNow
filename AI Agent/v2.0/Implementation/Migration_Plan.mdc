@@ -1,0 +1,341 @@
+# Migration Plan — DonateNow v1.0 → v2.0
+
+> Purpose: Plan the safe migration of all v1.0 data into the v2.0 schema.
+> Reference: [v1.0 ERD](../../v1.0/Extended/ERD.mdc) | [v2.0 Database_Changes](../Architecture/Database_Changes.mdc)
+
+---
+
+## 1. Migration Overview
+
+### Approach: Additive, Non-Destructive
+
+The migration follows an **additive** strategy:
+1. Create new v2.0 tables alongside existing v1.0 tables.
+2. Copy/transform data from v1.0 tables into v2.0 tables.
+3. Keep v1.0 tables intact for backward compatibility.
+4. Add new columns to existing tables (never drop columns).
+
+### Migration Guarantee
+- **Zero data loss**: Every v1.0 record is preserved.
+- **Rollback capable**: Migration can be reversed at any step.
+- **v1.0 functional**: v1.0 Edge Functions continue to work during and after migration.
+
+---
+
+## 2. Data Inventory (v1.0)
+
+### Existing Tables
+
+| Table | Purpose | Expected Records | Critical Data |
+|---|---|---|---|
+| `causes` | Donation causes | 1-5 | Title, description, target_amount, raised_amount |
+| `donations` | Donation records | 10-1000+ | donor_name, donor_email, amount, razorpay_ids, status |
+| `admin_users` | Admin accounts | 1-3 | email, name, supabase_auth_id |
+
+### Existing Functions
+| Function | Purpose |
+|---|---|
+| `get_donation_stats()` | Aggregate donation statistics |
+| `update_updated_at()` | Trigger for updated_at columns |
+
+### Existing Edge Functions
+| Function | Purpose |
+|---|---|
+| `create-order` | Create Razorpay order |
+| `verify-payment` | Verify payment signature + insert donation |
+| `razorpay-webhook` | Handle payment events |
+
+---
+
+## 3. Migration Mapping
+
+### 3.1 `causes` → `donation_profiles`
+
+| v1.0 Column (`causes`) | v2.0 Column (`donation_profiles`) | Transformation |
+|---|---|---|
+| `id` | `id` | Direct copy (preserve UUID) |
+| `title` | `title` | Direct copy |
+| `description` | `description` | Direct copy |
+| `target_amount` | `target_amount` | Direct copy |
+| `raised_amount` | `raised_amount` | Direct copy |
+| `image_url` | `image_url` | Direct copy |
+| `is_active` | `is_active` | Direct copy |
+| `created_at` | `created_at` | Direct copy |
+| `updated_at` | `updated_at` | Direct copy |
+| — | `creator_id` | Set to migrated admin user ID |
+| — | `category` | Set to 'general' |
+| — | `verification_status` | Set to 'verified' (pre-existing = trusted) |
+| — | `start_date` | Set to `created_at` |
+| — | `end_date` | NULL |
+
+### 3.2 `admin_users` → `users`
+
+| v1.0 Column (`admin_users`) | v2.0 Column (`users`) | Transformation |
+|---|---|---|
+| `id` | `id` | Direct copy (preserve UUID) |
+| `email` | `email` | Direct copy |
+| `name` | `name` | Direct copy |
+| — | `phone` | NULL |
+| `role` | `role` | Map: 'admin' → 'admin' |
+| — | `avatar_url` | NULL |
+| `supabase_auth_id` | `supabase_auth_id` | Direct copy |
+| — | `is_active` | true |
+| `created_at` | `created_at` | Direct copy |
+| `updated_at` | `updated_at` | Direct copy |
+
+### 3.3 `donations` — Add New Columns
+
+| New Column | Default Value | Notes |
+|---|---|---|
+| `campaign_id` | Mapped from `cause_id` → `donation_profiles.id` | FK to new table |
+| `donor_user_id` | NULL | v1.0 donors were anonymous |
+| `is_anonymous` | false | Default for existing donations |
+| `subscription_id` | NULL | No subscriptions in v1.0 |
+| `receipt_id` | NULL | No receipts in v1.0 |
+
+---
+
+## 4. Migration SQL Script
+
+```sql
+-- ============================================
+-- DonateNow v1.0 → v2.0 Migration Script
+-- ============================================
+-- Run AFTER 005_v2_schema.sql creates the new tables
+-- Run BEFORE 006_v2_security.sql applies RLS
+-- ============================================
+
+BEGIN;
+
+-- Step 1: Migrate admin_users → users
+-- Preserve original UUIDs for foreign key integrity
+INSERT INTO users (id, email, name, phone, role, avatar_url, supabase_auth_id, is_active, created_at, updated_at)
+SELECT
+    id,
+    email,
+    name,
+    NULL,           -- phone (not in v1.0)
+    role,           -- preserves 'admin'
+    NULL,           -- avatar_url (not in v1.0)
+    supabase_auth_id,
+    true,           -- is_active
+    created_at,
+    updated_at
+FROM admin_users
+ON CONFLICT (supabase_auth_id) DO NOTHING;
+
+-- Step 2: Migrate causes → donation_profiles
+-- Use first admin user as creator_id for migrated causes
+INSERT INTO donation_profiles (
+    id, creator_id, title, description, category, target_amount,
+    raised_amount, image_url, verification_status, is_active,
+    start_date, end_date, created_at, updated_at
+)
+SELECT
+    c.id,
+    (SELECT id FROM users WHERE role = 'admin' LIMIT 1),  -- assign to first admin
+    c.title,
+    c.description,
+    'general',          -- default category
+    c.target_amount,
+    c.raised_amount,
+    c.image_url,
+    'verified',         -- pre-existing causes are trusted
+    c.is_active,
+    c.created_at,       -- start_date = creation date
+    NULL,               -- no end_date
+    c.created_at,
+    c.updated_at
+FROM causes c
+ON CONFLICT (id) DO NOTHING;
+
+-- Step 3: Add new columns to donations table
+ALTER TABLE donations ADD COLUMN IF NOT EXISTS campaign_id UUID REFERENCES donation_profiles(id);
+ALTER TABLE donations ADD COLUMN IF NOT EXISTS donor_user_id UUID REFERENCES users(id);
+ALTER TABLE donations ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN DEFAULT false;
+ALTER TABLE donations ADD COLUMN IF NOT EXISTS subscription_id UUID;
+ALTER TABLE donations ADD COLUMN IF NOT EXISTS receipt_id UUID;
+
+-- Step 4: Backfill campaign_id from cause_id
+UPDATE donations
+SET campaign_id = cause_id
+WHERE cause_id IS NOT NULL AND campaign_id IS NULL;
+
+-- Step 5: Create indexes on new columns
+CREATE INDEX IF NOT EXISTS idx_donations_campaign_id ON donations(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_donations_donor_user_id ON donations(donor_user_id);
+CREATE INDEX IF NOT EXISTS idx_donations_is_anonymous ON donations(is_anonymous);
+
+COMMIT;
+
+-- ============================================
+-- Post-Migration Verification Queries
+-- ============================================
+
+-- Verify user migration count
+-- SELECT COUNT(*) FROM users;
+-- SELECT COUNT(*) FROM admin_users;
+-- These should match.
+
+-- Verify campaign migration
+-- SELECT COUNT(*) FROM donation_profiles;
+-- SELECT COUNT(*) FROM causes;
+-- These should match.
+
+-- Verify donation backfill
+-- SELECT COUNT(*) FROM donations WHERE cause_id IS NOT NULL AND campaign_id IS NULL;
+-- This should return 0.
+
+-- Verify no orphaned donations
+-- SELECT COUNT(*) FROM donations d
+-- LEFT JOIN donation_profiles dp ON d.campaign_id = dp.id
+-- WHERE d.campaign_id IS NOT NULL AND dp.id IS NULL;
+-- This should return 0.
+```
+
+---
+
+## 5. Rollback Script
+
+```sql
+-- ============================================
+-- v2.0 Migration Rollback Script
+-- ============================================
+-- USE WITH CAUTION: Only if migration must be reversed.
+-- ============================================
+
+BEGIN;
+
+-- Step 1: Remove new columns from donations
+ALTER TABLE donations DROP COLUMN IF EXISTS campaign_id;
+ALTER TABLE donations DROP COLUMN IF EXISTS donor_user_id;
+ALTER TABLE donations DROP COLUMN IF EXISTS is_anonymous;
+ALTER TABLE donations DROP COLUMN IF EXISTS subscription_id;
+ALTER TABLE donations DROP COLUMN IF EXISTS receipt_id;
+
+-- Step 2: Drop new tables (in dependency order)
+DROP TABLE IF EXISTS impact_reports CASCADE;
+DROP TABLE IF EXISTS campaign_progress CASCADE;
+DROP TABLE IF EXISTS tax_receipts CASCADE;
+DROP TABLE IF EXISTS payment_logs CASCADE;
+DROP TABLE IF EXISTS subscriptions CASCADE;
+DROP TABLE IF EXISTS verification_requests CASCADE;
+DROP TABLE IF EXISTS donation_profiles CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
+-- Step 3: Drop new functions
+DROP FUNCTION IF EXISTS get_campaign_stats(UUID);
+DROP FUNCTION IF EXISTS get_platform_stats();
+DROP FUNCTION IF EXISTS update_campaign_raised_amount();
+DROP FUNCTION IF EXISTS generate_receipt_number();
+DROP SEQUENCE IF EXISTS receipt_number_seq;
+
+COMMIT;
+
+-- v1.0 tables (causes, donations, admin_users) remain untouched.
+```
+
+---
+
+## 6. Data Validation Checklist
+
+### Pre-Migration
+- [ ] Full database backup created
+- [ ] v1.0 record counts noted (causes, donations, admin_users)
+- [ ] v1.0 Edge Functions tested and operational
+
+### Post-Migration
+- [ ] `users` count matches `admin_users` count
+- [ ] `donation_profiles` count matches `causes` count
+- [ ] All `donation_profiles` have `verification_status = 'verified'`
+- [ ] All `donations.campaign_id` populated (where `cause_id` exists)
+- [ ] No orphaned donations (campaign_id points to valid profile)
+- [ ] Original `causes` table intact and unchanged
+- [ ] Original `donations` table columns intact
+- [ ] Original `admin_users` table intact
+- [ ] v1.0 Edge Functions still operational (test create-order)
+- [ ] `get_donation_stats()` function still works
+- [ ] RLS policies on v1.0 tables unchanged
+
+### Data Integrity Checks
+
+```sql
+-- Check 1: No data loss
+SELECT 'users' AS table_name, COUNT(*) AS count FROM users
+UNION ALL
+SELECT 'admin_users', COUNT(*) FROM admin_users
+UNION ALL
+SELECT 'donation_profiles', COUNT(*) FROM donation_profiles
+UNION ALL
+SELECT 'causes', COUNT(*) FROM causes
+UNION ALL
+SELECT 'donations', COUNT(*) FROM donations;
+
+-- Check 2: All donations linked to campaigns
+SELECT COUNT(*) AS unlinked_donations
+FROM donations
+WHERE cause_id IS NOT NULL AND campaign_id IS NULL;
+-- Expected: 0
+
+-- Check 3: All migrated profiles are verified
+SELECT COUNT(*) AS non_verified_migrated
+FROM donation_profiles
+WHERE verification_status != 'verified'
+AND id IN (SELECT id FROM causes);
+-- Expected: 0
+
+-- Check 4: Financial totals match
+SELECT
+    (SELECT SUM(amount) FROM donations WHERE status = 'completed') AS v1_total,
+    (SELECT SUM(raised_amount) FROM donation_profiles) AS v2_total;
+-- These should match or be close
+```
+
+---
+
+## 7. Migration Execution Plan
+
+### Step-by-Step
+
+| Step | Action | Who | Verify |
+|---|---|---|---|
+| 1 | Create full database backup | DBA | Backup file exists |
+| 2 | Note v1.0 record counts | DBA | Counts documented |
+| 3 | Test v1.0 Edge Functions | Developer | All 3 functions work |
+| 4 | Run `005_v2_schema.sql` | DBA | New tables created |
+| 5 | Run `008_v2_migration.sql` | DBA | Data migrated |
+| 6 | Run validation queries | DBA | All checks pass |
+| 7 | Run `006_v2_security.sql` | DBA | RLS applied |
+| 8 | Run `007_v2_functions.sql` | DBA | Functions created |
+| 9 | Run `009_v2_seed.sql` | DBA | Test data added |
+| 10 | Run `010_v2_storage.sql` | DBA | Storage buckets ready |
+| 11 | Test v1.0 Edge Functions again | Developer | Still operational |
+| 12 | Deploy v2.0 Edge Functions | Developer | New functions work |
+| 13 | Test v2.0 iOS app | Developer | All flows work |
+
+### Rollback Trigger
+If ANY of these occur, execute rollback:
+- Data loss detected (record counts mismatch)
+- v1.0 Edge Functions broken
+- Critical RLS policy failure
+- Financial totals mismatch
+
+---
+
+## 8. Existing Records Preservation
+
+### Donors
+- **All existing donor data preserved** in `donations` table.
+- Existing donors are anonymous (no `users` record) — `donor_user_id = NULL`.
+- When a returning donor registers, their email can be matched to create a unified history.
+
+### Donations
+- **All existing donations preserved** with original columns intact.
+- New `campaign_id` column backfilled from `cause_id`.
+- Original `cause_id` column kept for backward compatibility.
+
+### Admin Accounts
+- **All existing admin accounts preserved**.
+- Migrated to `users` table with `role = 'admin'`.
+- Original `admin_users` table kept for v1.0 backward compatibility.
+- Supabase Auth sessions continue to work (same `supabase_auth_id`).

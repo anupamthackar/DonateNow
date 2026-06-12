@@ -1,0 +1,317 @@
+# Documentation Guide — DonateNow v2.0
+
+> Purpose: Explains every v2.0 context engineering file, its purpose, audience, interview relevance, and industry standards.
+> Version: 2.0
+> Previous: [v1.0 Documentation Guide](../../v1.0/Material/Documentation_Guide.md)
+
+---
+
+## File 1: PRD.mdc (Product Requirements Document)
+
+### What is it?
+A formal document defining **what** needs to be built for v2.0, **why** the transformation is needed, and **how** success will be measured. Covers multi-cause platform features, user flows, Edge Function contracts, and edge cases.
+
+### Why do we need it?
+- Prevents scope creep during platform transformation.
+- Defines new user roles (Creator) and their flows.
+- Specifies new Edge Function contracts (receipts, subscriptions, AI reports).
+- Documents edge cases for 9 new features.
+
+### Who uses it?
+| Role | Usage |
+|---|---|
+| Product Manager | Validates feature completeness and business alignment |
+| iOS Engineer | Implements features per user flows and API contracts |
+| Services Engineer | Implements Edge Functions per contracts |
+| QA Engineer | Validates edge cases and acceptance criteria |
+| AI Agent | Primary reference for all implementation decisions |
+
+### What does it contain?
+- Problem statement (v1.0 limitations)
+- Solution overview (multi-cause platform vision)
+- User flows (donor, creator, admin, receipt, AI report)
+- Data layer design (new Supabase operations + Edge Functions)
+- Edge cases (21 scenarios across 5 categories)
+- KPI summary table
+- Limitations and dependencies
+- Backward compatibility requirements
+
+### Interview Questions
+- "How do you define product requirements for a platform evolution?"
+- "How do you handle backward compatibility when adding new features?"
+- "How do you prioritize features in a multi-user-role product?"
+
+---
+
+## File 2: KPI.mdc (Key Performance Indicators)
+
+### What is it?
+56 measurable success metrics organized by feature, platform performance, security, UX, and reliability. Each KPI has a verification method and target value.
+
+### Why do we need it?
+- Objective measurement of feature completeness.
+- Provides acceptance gates for each development phase.
+- Ensures quality standards are met before launch.
+
+### Who uses it?
+| Role | Usage |
+|---|---|
+| QA Engineer | Designs test plans to verify KPIs |
+| Developer | Implements features to meet targets |
+| Product Manager | Tracks feature readiness |
+
+### What does it contain?
+- Core platform metrics (5 KPIs)
+- Feature-level metrics (35 KPIs across 9 features)
+- Performance metrics (5 KPIs)
+- Security metrics (7 KPIs)
+- UX metrics (5 KPIs)
+- Reliability metrics (4 KPIs)
+- Acceptance gates and traceability matrix
+
+### Industry Standards
+- **DORA Metrics**: Deployment frequency, lead time, MTTR, change failure rate
+- **SRE**: SLIs, SLOs, error budgets
+- **SMART Goals**: Specific, Measurable, Achievable, Relevant, Time-bound
+
+---
+
+## File 3: Personas.mdc (Implementation Personas)
+
+### What is it?
+Three implementation personas (Frontend/iOS, Backend/Services, Database) defining tech stack, responsibilities, coding standards, and deliverables for v2.0.
+
+### Why do we need it?
+- Establishes clear ownership boundaries per engineering discipline.
+- Prevents cross-concern pollution (e.g., no network calls in Views).
+- Defines v2.0-specific tech additions (PDFKit, Subscriptions API, LLM, Storage).
+
+### Who uses it?
+| Role | Usage |
+|---|---|
+| iOS Engineer | Frontend persona rules and deliverables |
+| Services Engineer | Backend persona rules and deliverables |
+| Database Admin | Database persona rules and deliverables |
+| AI Agent | Role-based implementation decisions |
+
+### Interview Questions
+- "How do you split responsibilities in a SwiftUI MVVM app?"
+- "Why separate services from ViewModels?"
+- "How do you handle database migrations in an evolving product?"
+
+---
+
+## File 4: Project_Scope.mdc
+
+### What is it?
+Comprehensive scope definition for v2.0 including business context, goals, objectives, in-scope/out-of-scope items, stakeholders, assumptions, constraints, risks, dependencies, and success criteria.
+
+### Why do we need it?
+- Prevents scope creep during multi-feature platform build.
+- Aligns all stakeholders on what is (and isn't) being built.
+- Documents risks and mitigation strategies.
+
+### Who uses it?
+| Role | Usage |
+|---|---|
+| Product Manager | Scope governance and change control |
+| Project Sponsor | Approval of scope boundaries |
+| Developer | Understands constraints and dependencies |
+
+### Industry Standards
+- **IEEE 830**: Software Requirements Specification
+- **PMBOK**: Scope Management (Plan, Define, Create WBS, Validate, Control)
+- **Agile**: Product Backlog as scope container
+
+---
+
+## File 5: Project_Boundaries.mdc
+
+### What is it?
+Strict development rules for v2.0, including TDD mandate, backward compatibility rules, AI agent decision order, prohibited actions, and quality gates.
+
+### Why do we need it?
+- Prevents destructive changes to v1.0.
+- Enforces TDD methodology for v2.0 features.
+- Defines clear quality checkpoints before delivery.
+
+### Who uses it?
+| Role | Usage |
+|---|---|
+| Developer | Rules to follow during implementation |
+| AI Agent | Decision hierarchy and prohibited actions |
+| QA Engineer | Quality gate verification |
+
+---
+
+## File 6: Save_Token.mdc
+
+### What is it?
+Protocol for optimizing AI-agent communication to minimize token usage through diffs, compact responses, and context file references.
+
+### Why do we need it?
+- Reduces AI interaction costs.
+- Speeds up development cycles.
+- Maintains focused, actionable responses.
+
+---
+
+## File 7: Prompts.mdc
+
+### What is it?
+Catalog of 14 master prompts used to generate each v2.0 context engineering artifact. Documents input → output → prompt text for reproducibility.
+
+### Why do we need it?
+- Enables re-generation of any artifact.
+- Documents the methodology behind each document.
+- Serves as a template for future version evolutions (v3.0+).
+
+---
+
+## File 8: Feature_Impact_Analysis.mdc
+
+### What is it?
+Feature-by-feature impact analysis across 7 dimensions: business value, frontend, backend, database, API, testing, and security.
+
+### Why do we need it?
+- Identifies cross-cutting concerns before implementation.
+- Reveals hidden dependencies between features.
+- Helps prioritize implementation order.
+
+### Industry Standards
+- **Impact Analysis** (ITIL Change Management)
+- **Dependency Mapping**
+- **Risk-Based Testing**
+
+---
+
+## File 9: User_Roles_and_Access_Control.mdc
+
+### What is it?
+Detailed role definitions (Donor, Campaign Creator, Admin) with permissions, access levels, and RLS policy mappings.
+
+### Why do we need it?
+- Defines authorization model for multi-role platform.
+- Maps directly to database RLS policies.
+- Ensures security by design.
+
+### Industry Standards
+- **RBAC**: Role-Based Access Control
+- **Principle of Least Privilege**
+- **OWASP Access Control Guidelines**
+
+---
+
+## File 10: System_Architecture.mdc
+
+### What is it?
+System architecture comparison (v1.0 → v2.0) with updated diagrams, navigation architecture, and new service components.
+
+### Why do we need it?
+- Visualizes the architectural evolution.
+- Defines new components and their interactions.
+- Guides implementation order.
+
+---
+
+## File 11: Database_Changes.mdc
+
+### What is it?
+Complete database evolution documentation — existing schema, new schema, relationships, migration strategy, and SQL scripts.
+
+### Why do we need it?
+- Defines the exact data model for v2.0.
+- Provides migration scripts for v1.0 → v2.0.
+- Documents RLS policies for new tables.
+
+---
+
+## File 12: API_Changes.mdc
+
+### What is it?
+API evolution documentation — existing Edge Functions (preserved), new Edge Functions, request/response contracts, and authentication.
+
+---
+
+## File 13: TDD_Strategy.mdc
+
+### What is it?
+Test-Driven Development methodology for v2.0 — Red-Green-Refactor cycle, testing pyramid, and tooling.
+
+### Industry Standards
+- **TDD**: Kent Beck's Test-Driven Development
+- **Testing Pyramid**: Unit → Integration → E2E
+- **XP (Extreme Programming)**: TDD as core practice
+
+---
+
+## File 14: Test_Cases.mdc
+
+### What is it?
+Comprehensive test cases for all v2.0 features with ID, scenario, expected result, and test type.
+
+---
+
+## File 15: Feature_Implementation_Plan.mdc
+
+### What is it?
+Phased implementation plan with deliverables, dependencies, KPIs, and acceptance criteria per phase.
+
+### Industry Standards
+- **Agile Sprint Planning**
+- **Scrum Increment Delivery**
+- **SAFe Program Increment**
+
+---
+
+## File 16: Migration_Plan.mdc
+
+### What is it?
+Data migration plan from v1.0 to v2.0 — inventory, mapping, scripts, rollback, validation.
+
+---
+
+## Common Mistakes in Context Engineering
+
+| # | Mistake | Impact | Prevention |
+|---|---|---|---|
+| 1 | Missing edge cases | Runtime failures in production | Systematic edge case analysis per feature |
+| 2 | Weak KPIs (not measurable) | Cannot verify success | Use SMART criteria; include verification method |
+| 3 | Undefined scope boundaries | Scope creep during development | Explicit in-scope/out-of-scope tables |
+| 4 | Poor acceptance criteria | Ambiguous "done" definition | Link every feature to testable KPIs |
+| 5 | No migration plan | Data loss during version upgrade | Plan migration before schema changes |
+| 6 | No backward compatibility | v1.0 breaks when v2.0 launches | Additive changes only; migration scripts |
+| 7 | No TDD in evolving products | Regression bugs multiply | TDD mandate in Project Boundaries |
+| 8 | Role permissions undefined | Security breaches | RBAC document with RLS mapping |
+| 9 | No version separation | v1.0 docs overwritten | Separate v1.0 and v2.0 directories |
+| 10 | Assumptions undocumented | Surprises during implementation | Explicit assumptions table in Scope |
+
+---
+
+## File Map (v2.0 Quick Reference)
+
+```
+AI Agent/v2.0/
+├── Context/
+│   ├── PRD.mdc                        → Phase 02: Requirements
+│   ├── KPI.mdc                        → Phase 03: Success Metrics
+│   ├── Personas.mdc                   → Phase 04: Tech Decisions
+│   ├── Project_Scope.mdc             → Phase 05: Scope Definition
+│   ├── Project_Boundaries.mdc        → Phase 06: Development Rules
+│   ├── Save_Token.mdc                → AI Optimization
+│   ├── Prompts.mdc                   → Prompt Catalog
+│   ├── Documentation_Guide.mdc       → This File
+│   ├── Feature_Impact_Analysis.mdc   → Impact Analysis
+│   └── User_Roles_and_Access_Control.mdc → RBAC
+├── Architecture/
+│   ├── System_Architecture.mdc       → Architecture Evolution
+│   ├── Database_Changes.mdc          → Schema Evolution
+│   └── API_Changes.mdc              → API Evolution
+├── Testing/
+│   ├── TDD_Strategy.mdc             → TDD Methodology
+│   ├── Test_Cases.mdc               → Test Case Catalog
+│   └── Acceptance_Testing.mdc       → UAT Criteria
+└── Implementation/
+    ├── Feature_Implementation_Plan.mdc → Phased Plan
+    └── Migration_Plan.mdc            → Data Migration
+```
