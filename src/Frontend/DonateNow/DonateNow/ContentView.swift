@@ -1,8 +1,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var authService = AuthService.shared
+    
     var body: some View {
-        MainTabView()
+        if authService.isAuthenticated {
+            MainTabView()
+        } else {
+            UserLoginView()
+        }
     }
 }
 

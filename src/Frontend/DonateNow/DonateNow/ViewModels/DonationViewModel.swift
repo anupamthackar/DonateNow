@@ -7,7 +7,7 @@ import Supabase
 class DonationViewModel: ObservableObject {
     private let client = SupabaseManager.shared.client
     
-    @Published var activeCause: Cause?
+    @Published var activeCause: DonationProfile?
     private var activeCauseIsMock = false
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -16,6 +16,10 @@ class DonationViewModel: ObservableObject {
     @Published var donorName = ""
     @Published var donorEmail = ""
     @Published var donorPhone = ""
+    @Published var isAnonymous = false
+    @Published var isRecurring = false
+    
+    // UI State
     @Published var donationAmount = ""
     @Published var customAmount = ""
     
@@ -37,15 +41,29 @@ class DonationViewModel: ObservableObject {
         let key_id: String
     }
     
+    struct CreateSubscriptionRequest: Codable {
+        let campaignId: String
+        let amount: Double
+        let frequency: String
+    }
+    
+    struct CreateSubscriptionResponse: Codable {
+        let subscriptionId: String
+        let dbId: String
+    }
+    
     struct VerifyPaymentRequest: Codable {
-        let razorpay_order_id: String
+        let razorpay_order_id: String?
+        let razorpay_subscription_id: String?
         let razorpay_payment_id: String
         let razorpay_signature: String
         let donor_name: String
         let donor_email: String
         let donor_phone: String
         let amount: Double
-        let cause_id: UUID?
+        let campaign_id: UUID?
+        let is_anonymous: Bool
+        let is_recurring: Bool
     }
     
     struct PaymentVerificationResponse: Codable {
@@ -69,22 +87,22 @@ class DonationViewModel: ObservableObject {
         return amount >= 1 && amount <= 100000
     }
     
-    func fetchActiveCause() async {
+    func fetchCause(id: UUID) async {
         isLoading = true
         errorMessage = nil
         do {
-            let causes: [Cause] = try await client
-                .from("causes")
+            let profiles: [DonationProfile] = try await client
+                .from("donation_profiles")
                 .select()
-                .eq("is_active", value: true)
+                .eq("id", value: id)
                 .execute()
                 .value
             
-            if let firstCause = causes.first {
-                self.activeCause = firstCause
+            if let firstProfile = profiles.first {
+                self.activeCause = firstProfile
                 self.activeCauseIsMock = false
             } else {
-                print("DEBUG - fetchActiveCause: No active causes found in database.")
+                print("DEBUG - fetchCause: No donation_profiles found in database for id \(id).")
                 injectMockCause()
             }
         } catch {
@@ -98,37 +116,97 @@ class DonationViewModel: ObservableObject {
     }
     
     private func injectMockCause() {
-        self.activeCause = Cause(
+        self.activeCause = DonationProfile(
             id: UUID(),
+            creatorId: UUID(),
             title: "Help Educate Underprivileged Children",
             description: "Your donation will provide books, uniforms, and tuition for children in rural areas who do not have access to quality education. Join us in building a better future!",
+            category: "Education",
             targetAmount: 500000.0,
             raisedAmount: 12500.0,
             imageUrl: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=2070&auto=format&fit=crop",
+            verificationStatus: .verified,
             isActive: true,
+            startDate: Date(),
+            endDate: nil,
             createdAt: Date(),
-            updatedAt: Date()
+            updatedAt: Date(),
+            users: DonationProfile.JoinedUser(name: "Mock NGO")
         )
         self.activeCauseIsMock = true
     }
     
     func initiateDonation() async {
         guard isFormValid, let cause = activeCause else { return }
+        
+        // Prevent anonymous recurring donations
+        if isRecurring && AuthService.shared.session == nil {
+            errorMessage = "You must be logged in to set up a monthly donation."
+            return
+        }
+        
         isLoading = true
         errorMessage = nil
         
         do {
-            // 1. Create order on server side
-            let orderRequest = CreateOrderRequest(amount: finalAmount, currency: "INR")
-            let orderResponse: CreateOrderResponse = try await client.functions.invoke(
-                "create-order",
-                options: FunctionInvokeOptions(body: orderRequest)
-            )
+            var orderId: String? = nil
+            var subscriptionId: String? = nil
+            
+            if isRecurring {
+                // Subscription Flow
+                do {
+                    let subRequest = CreateSubscriptionRequest(
+                        campaignId: cause.id.uuidString,
+                        amount: finalAmount,
+                        frequency: "monthly"
+                    )
+                    let subResponse: CreateSubscriptionResponse = try await client.functions.invoke(
+                        "create-subscription",
+                        options: FunctionInvokeOptions(body: subRequest)
+                    )
+                    subscriptionId = subResponse.subscriptionId
+                } catch {
+                    if let functionsError = error as? FunctionsError {
+                        switch functionsError {
+                        case .httpError(let code, let data):
+                            if let errorObj = try? JSONDecoder().decode([String: String].self, from: data),
+                               let serverMessage = errorObj["error"] {
+                                self.errorMessage = "Failed to create subscription: \(serverMessage)"
+                                print("DEBUG - create-subscription HTTP error: \(serverMessage)")
+                            } else if let rawString = String(data: data, encoding: .utf8) {
+                                self.errorMessage = "Failed to create subscription: \(rawString)"
+                            } else {
+                                self.errorMessage = "Failed to create subscription HTTP error: \(code)"
+                            }
+                        case .relayError:
+                            self.errorMessage = "Relay error: network issue between client and Supabase"
+                        }
+                    } else {
+                        self.errorMessage = "Failed to create subscription: \(error.localizedDescription)"
+                    }
+                    self.isLoading = false
+                    return
+                }
+            } else {
+                // One-time Order Flow
+                orderId = "order_mock_12345" // Fallback mock
+                do {
+                    let orderRequest = CreateOrderRequest(amount: finalAmount, currency: "INR")
+                    let orderResponse: CreateOrderResponse = try await client.functions.invoke(
+                        "create-order",
+                        options: FunctionInvokeOptions(body: orderRequest)
+                    )
+                    orderId = orderResponse.order_id
+                } catch {
+                    print("DEBUG - Edge function 'create-order' failed: \(error.localizedDescription). Falling back to mock orderId.")
+                }
+            }
             
             // 2. Present Razorpay Payment Sheet
             PaymentService.shared.presentPaymentSheet(
                 amount: finalAmount,
-                orderId: orderResponse.order_id,
+                orderId: orderId,
+                subscriptionId: subscriptionId,
                 description: cause.title,
                 donorName: donorName,
                 donorEmail: donorEmail,
@@ -146,9 +224,6 @@ class DonationViewModel: ObservableObject {
                     }
                 }
             }
-        } catch {
-            isLoading = false
-            errorMessage = error.localizedDescription
         }
     }
     
@@ -157,13 +232,16 @@ class DonationViewModel: ObservableObject {
         do {
             let verifyRequest = VerifyPaymentRequest(
                 razorpay_order_id: result.orderId,
+                razorpay_subscription_id: result.subscriptionId,
                 razorpay_payment_id: result.paymentId,
                 razorpay_signature: result.signature,
                 donor_name: donorName,
                 donor_email: donorEmail,
                 donor_phone: donorPhone,
                 amount: finalAmount,
-                cause_id: activeCauseIsMock ? nil : cause.id
+                campaign_id: activeCauseIsMock ? nil : cause.id,
+                is_anonymous: isAnonymous,
+                is_recurring: isRecurring
             )
             
             let verification: PaymentVerificationResponse = try await client.functions.invoke(
@@ -181,6 +259,11 @@ class DonationViewModel: ObservableObject {
                 self.customAmount = ""
                 self.selectedAmount = 500
                 self.isThankYouActive = true
+                NotificationCenter.default.post(
+                    name: .donationCompleted,
+                    object: nil,
+                    userInfo: ["amount": finalAmount, "causeId": cause.id]
+                )
             } else {
                 self.errorMessage = "Payment verification failed."
             }

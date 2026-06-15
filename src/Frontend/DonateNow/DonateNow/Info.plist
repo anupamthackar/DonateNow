@@ -4,6 +4,8 @@
 <dict>
 	<key>RAZORPAY_KEY_ID</key>
 	<string>$(RAZORPAY_KEY_ID)</string>
+	<key>RAZORPAY_KEY_SECRET</key>
+	<string>$(RAZORPAY_KEY_SECRET)</string>
 	<key>SUPABASE_ANON_KEY</key>
 	<string>$(SUPABASE_ANON_KEY)</string>
 	<key>SUPABASE_URL</key>

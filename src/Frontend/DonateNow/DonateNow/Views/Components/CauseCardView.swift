@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct CauseCardView: View {
-    let cause: Cause
+    let cause: DonationProfile
     @State private var animatedProgress: CGFloat = 0.0
     
     var progress: Double {
         if cause.targetAmount > 0 {
-            return min(cause.raisedAmount / cause.targetAmount, 1.0)
+            let raised = Double(truncating: cause.raisedAmount as NSNumber)
+            let target = Double(truncating: cause.targetAmount as NSNumber)
+            return min(raised / target, 1.0)
         }
         return 0
     }
@@ -70,31 +72,11 @@ struct CauseCardView: View {
                 .frame(height: 8)
                 
                 // Figures
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Raised")
-                            .font(.caption2)
-                            .textCase(.uppercase)
-                            .tracking(1.0)
-                            .foregroundColor(.secondary)
-                        Text(Formatters.formatCurrency(amount: cause.raisedAmount))
-                            .font(.body).bold()
-                            .foregroundColor(Color.theme.primary)
-                    }
-                    
-                    Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("Goal")
-                            .font(.caption2)
-                            .textCase(.uppercase)
-                            .tracking(1.0)
-                            .foregroundColor(.secondary)
-                        Text(Formatters.formatCurrency(amount: cause.targetAmount))
-                            .font(.body).bold()
-                            .foregroundColor(.primary)
-                    }
-                }
+                Text("\(Formatters.formatCurrency(amount: cause.raisedAmount)) collected from \(Formatters.formatCurrency(amount: cause.targetAmount)) goal")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
             }
         }
         .cardStyle(backgroundColor: Color(uiColor: .secondarySystemBackground), cornerRadius: 20)

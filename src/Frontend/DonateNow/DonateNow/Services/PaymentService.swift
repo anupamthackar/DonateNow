@@ -6,7 +6,8 @@ import Combine
 
 struct RazorpayResult {
     let paymentId: String
-    let orderId: String
+    let orderId: String?
+    let subscriptionId: String?
     let signature: String
 }
 
@@ -24,7 +25,8 @@ class PaymentService: NSObject, ObservableObject {
     
     func presentPaymentSheet(
         amount: Double,
-        orderId: String,
+        orderId: String? = nil,
+        subscriptionId: String? = nil,
         description: String,
         donorName: String,
         donorEmail: String,
@@ -33,12 +35,11 @@ class PaymentService: NSObject, ObservableObject {
     ) {
         self.completion = completion
         
-        let options: [String: Any] = [
+        var options: [String: Any] = [
             "amount": Int(amount * 100), // Razorpay expects amount in paise (sub-units)
             "currency": "INR",
             "name": "DonateNow NGO",
             "description": description,
-            "order_id": orderId,
             "prefill": [
                 "name": donorName,
                 "email": donorEmail,
@@ -49,30 +50,45 @@ class PaymentService: NSObject, ObservableObject {
             ]
         ]
         
+        if let subId = subscriptionId {
+            options["subscription_id"] = subId
+        } else if let ordId = orderId {
+            options["order_id"] = ordId
+        }
+        
         DispatchQueue.main.async {
-            guard let rootVC = UIApplication.shared.connectedScenes
-                .filter({ $0.activationState == .foregroundActive })
-                .compactMap({ $0 as? UIWindowScene })
-                .first?.windows
-                .first(where: { $0.isKeyWindow })?.rootViewController else {
+            guard let windowScene = UIApplication.shared.connectedScenes.filter({ $0.activationState == .foregroundActive }).first as? UIWindowScene,
+                  let window = windowScene.windows.first(where: { $0.isKeyWindow }),
+                  var topController = window.rootViewController else {
                 completion(.failure(AppError.paymentError("Unable to find root view controller")))
                 return
             }
             
-            self.razorpay?.open(options, displayController: rootVC)
+            while let presentedViewController = topController.presentedViewController {
+                topController = presentedViewController
+            }
+            
+            guard let razorpay = self.razorpay else {
+                completion(.failure(AppError.paymentError("Razorpay SDK failed to initialize. Please check your RAZORPAY_KEY_ID.")))
+                return
+            }
+            
+            razorpay.open(options, displayController: topController)
         }
     }
 }
 
 extension PaymentService: RazorpayPaymentCompletionProtocolWithData {
     func onPaymentSuccess(_ payment_id: String, andData response: [AnyHashable : Any]?) {
-        guard let order_id = response?["razorpay_order_id"] as? String,
-              let signature = response?["razorpay_signature"] as? String else {
-            completion?(.failure(AppError.paymentError("Invalid success response from Razorpay")))
+        let order_id = response?["razorpay_order_id"] as? String
+        let sub_id = response?["razorpay_subscription_id"] as? String
+        
+        guard let signature = response?["razorpay_signature"] as? String else {
+            completion?(.failure(AppError.paymentError("Invalid success response from Razorpay: missing signature")))
             return
         }
         
-        let result = RazorpayResult(paymentId: payment_id, orderId: order_id, signature: signature)
+        let result = RazorpayResult(paymentId: payment_id, orderId: order_id, subscriptionId: sub_id, signature: signature)
         completion?(.success(result))
     }
     

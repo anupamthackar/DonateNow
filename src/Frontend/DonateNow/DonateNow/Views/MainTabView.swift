@@ -6,24 +6,42 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
+            // Tab 0: Explore (Marketplace)
             NavigationStack {
-                DonationView()
+                MarketplaceView()
             }
             .tag(0)
             .tabItem {
-                Label("Donate", systemImage: selectedTab == 0 ? "heart.fill" : "heart")
+                Label("Explore", systemImage: selectedTab == 0 ? "magnifyingglass.circle.fill" : "magnifyingglass.circle")
             }
             
+            // Tab 1: Creator
             NavigationStack {
-                if authService.isAuthenticated {
-                    AdminDashboardView()
-                } else {
-                    AdminLoginView()
-                }
+                MyCampaignsView()
             }
             .tag(1)
             .tabItem {
-                Label("Admin", systemImage: selectedTab == 1 ? "person.badge.key.fill" : "person.badge.key")
+                Label("Creator", systemImage: selectedTab == 1 ? "plus.rectangle.on.rectangle.fill" : "plus.rectangle.on.rectangle")
+            }
+            
+            // Tab 2: Profile
+            NavigationStack {
+                UserProfileView()
+            }
+            .tag(2)
+            .tabItem {
+                Label("Profile", systemImage: selectedTab == 2 ? "person.crop.circle.fill" : "person.crop.circle")
+            }
+            
+            // Tab 3: Admin (Conditional based on features/role)
+            if authService.isAdmin {
+                NavigationStack {
+                    AdminDashboardView()
+                }
+                .tag(3)
+                .tabItem {
+                    Label("Admin", systemImage: selectedTab == 3 ? "person.badge.key.fill" : "person.badge.key")
+                }
             }
         }
         .tint(Color.theme.primary)

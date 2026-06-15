@@ -8,18 +8,36 @@ struct IntegrationTests {
 
     @Test func testSupabaseConnectionAndFetchCauses() async throws {
         // Query active causes anonymously
-        let causes: [Cause] = try await client
-            .from("causes")
+        let profiles: [DonationProfile] = try await client
+            .from("donation_profiles")
             .select()
             .eq("is_active", value: true)
             .execute()
             .value
             
         // We know we have at least one active cause in our remote database
-        #expect(!causes.isEmpty)
-        if let first = causes.first {
+        #expect(!profiles.isEmpty)
+        if let first = profiles.first {
             #expect(!first.title.isEmpty)
             #expect(first.targetAmount > 0)
+        }
+    }
+    
+    @Test func testCampaignSearchService() async throws {
+        do {
+            let campaigns: [DonationProfile] = try await client
+                .from("donation_profiles")
+                .select("*, users!creator_id(name)")
+                .eq("is_active", value: true)
+                .eq("verification_status", value: "verified")
+                .execute()
+                .value
+            
+            print("Successfully decoded \(campaigns.count) campaigns!")
+            #expect(!campaigns.isEmpty)
+        } catch {
+            print("CampaignSearchService Error: \(error)")
+            Issue.record("Failed to fetch discoverable campaigns: \(error)")
         }
     }
     
@@ -54,26 +72,31 @@ struct IntegrationTests {
     
     @Test func testVerifyPaymentEdgeFunctionRejection() async throws {
         struct VerifyPaymentRequest: Codable {
-            let razorpay_order_id: String
+            let razorpay_order_id: String?
+            let razorpay_subscription_id: String?
             let razorpay_payment_id: String
             let razorpay_signature: String
             let donor_name: String
             let donor_email: String
             let donor_phone: String
             let amount: Double
-            let cause_id: UUID?
+            let campaign_id: UUID?
+            let is_anonymous: Bool
+            let is_recurring: Bool
         }
         
         // Use intentionally invalid signature to test payment verification failure path
         let verifyRequest = VerifyPaymentRequest(
             razorpay_order_id: "order_mock123",
+            razorpay_subscription_id: nil,
             razorpay_payment_id: "pay_mock123",
             razorpay_signature: "invalid_signature_hash_xyz",
             donor_name: "Test User",
             donor_email: "test@example.com",
             donor_phone: "9876543210",
             amount: 500.0,
-            cause_id: nil
+            campaign_id: nil,
+            is_anonymous: false
         )
         
         do {

@@ -83,13 +83,3 @@ Files:
 ```
 
 ---
-
-## Token Budget Awareness
-
-| Action Type | Expected Tokens | Approach |
-|---|---|---|
-| Bug fix | < 200 tokens | Diff only |
-| New View / ViewModel | < 500 tokens | Full file |
-| New Edge Function | < 400 tokens | Full file |
-| Architecture question | < 100 tokens | Reference context file |
-| Multi-file change | < 800 tokens | Diffs per file |

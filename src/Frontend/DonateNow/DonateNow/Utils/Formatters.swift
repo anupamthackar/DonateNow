@@ -9,7 +9,13 @@ struct Formatters {
     }()
     
     static func formatCurrency(amount: Double) -> String {
-        return currencyFormatter.string(from: NSNumber(value: amount)) ?? "₹\(amount)"
+        let nsAmount = NSNumber(value: amount)
+        return currencyFormatter.string(from: nsAmount) ?? "₹\(amount)"
+    }
+    
+    static func formatCurrency(amount: Decimal) -> String {
+        let nsAmount = amount as NSDecimalNumber
+        return currencyFormatter.string(from: nsAmount) ?? "₹\(amount)"
     }
     
     static func formatDate(_ date: Date) -> String {

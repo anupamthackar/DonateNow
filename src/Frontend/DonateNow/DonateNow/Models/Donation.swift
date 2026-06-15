@@ -16,6 +16,7 @@ struct Donation: Identifiable, Codable {
     let notes: String?
     let createdAt: Date
     let updatedAt: Date
+    let isRecurring: Bool?
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -33,6 +34,7 @@ struct Donation: Identifiable, Codable {
         case notes
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case isRecurring = "is_recurring"
     }
     
     init(from decoder: Decoder) throws {
@@ -51,6 +53,7 @@ struct Donation: Identifiable, Codable {
         self.notes = try container.decodeIfPresent(String.self, forKey: .notes)
         self.createdAt = try container.decode(Date.self, forKey: .createdAt)
         self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        self.isRecurring = try container.decodeIfPresent(Bool.self, forKey: .isRecurring)
         
         // Handle decimal mapping from either JSON numeric double or string
         if let doubleAmount = try? container.decode(Double.self, forKey: .amount) {

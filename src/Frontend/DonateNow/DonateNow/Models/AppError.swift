@@ -7,6 +7,7 @@ enum AppError: Error, LocalizedError {
     case databaseError(String)
     case authenticationError(String)
     case paymentError(String)
+    case decodingError
     case unknown
     
     var errorDescription: String? {
@@ -23,6 +24,8 @@ enum AppError: Error, LocalizedError {
             return "Authentication failed: \(message)"
         case .paymentError(let message):
             return "Payment error: \(message)"
+        case .decodingError:
+            return "Failed to decode data."
         case .unknown:
             return "An unknown error occurred."
         }

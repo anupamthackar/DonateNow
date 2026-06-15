@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DonationView: View {
+    let causeId: UUID
     @StateObject private var viewModel = DonationViewModel()
     @State private var animateHero = false
     
@@ -122,6 +123,28 @@ struct DonationView: View {
                             text: $viewModel.donorPhone,
                             keyboardType: .phonePad
                         )
+                        
+                        Toggle(isOn: $viewModel.isRecurring) {
+                            Text("Make this a monthly donation")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            Text("Support this cause every month automatically")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: Color.theme.primary))
+                        .padding(.top, 8)
+                        
+                        Toggle(isOn: $viewModel.isAnonymous) {
+                            Text("Make my donation anonymous")
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            Text("Hide my name on the Donor Wall")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: Color.theme.primary))
+                        .padding(.top, 8)
                     }
                     .cardStyle()
                     
@@ -176,7 +199,7 @@ struct DonationView: View {
                             .foregroundColor(.secondary)
                         
                         Button {
-                            Task { await viewModel.fetchActiveCause() }
+                            Task { await viewModel.fetchCause(id: causeId) }
                         } label: {
                             Label("Retry", systemImage: "arrow.clockwise")
                         }
@@ -189,19 +212,17 @@ struct DonationView: View {
                 }
             }
             .padding(.horizontal)
-            .frame(maxWidth: 600)
-            .frame(maxWidth: .infinity)
+            .padding(.bottom, 40)
         }
         .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle("DonateNow")
-        .navigationBarTitleDisplayMode(.large)
-        .refreshable {
-            await viewModel.fetchActiveCause()
+        .navigationTitle("Support Cause")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            Task {
+                await viewModel.fetchCause(id: causeId)
+            }
         }
-        .task {
-            await viewModel.fetchActiveCause()
-        }
-        .navigationDestination(isPresented: $viewModel.isThankYouActive) {
+        .fullScreenCover(isPresented: $viewModel.isThankYouActive) {
             if let result = viewModel.verificationResult {
                 ThankYouView(donationId: result.donation_id, amount: viewModel.completedAmount)
             }
@@ -209,10 +230,10 @@ struct DonationView: View {
     }
 }
 
-
-
-#Preview {
-    NavigationStack {
-        DonationView()
+struct DonationView_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            DonationView(causeId: UUID())
+        }
     }
 }

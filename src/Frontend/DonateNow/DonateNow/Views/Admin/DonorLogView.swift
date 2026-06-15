@@ -291,9 +291,17 @@ struct DonationLogCard: View {
             
             // Donor details
             VStack(alignment: .leading, spacing: 4) {
-                Text(donation.donorName)
-                    .font(.subheadline.bold())
-                    .foregroundColor(.primary)
+                HStack(spacing: 6) {
+                    Text(donation.donorName)
+                        .font(.subheadline.bold())
+                        .foregroundColor(.primary)
+                    
+                    if donation.isRecurring == true {
+                        Image(systemName: "arrow.2.squarepath")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(.green)
+                    }
+                }
                 
                 Text(donation.donorEmail)
                     .font(.caption)
