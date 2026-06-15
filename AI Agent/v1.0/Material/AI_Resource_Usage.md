@@ -1,30 +1,50 @@
 # AI Resource Usage & Token Economics
 
-This document analyzes the token consumption, direct cloud costs (in both USD and INR), and key AI behavioral aspects used during the design, architecture modeling, and implementation phases of the **DonateNow** project.
+This document analyzes the optimized token consumption, direct cloud costs (in both USD and INR), and key AI behavioral aspects used to build both **DonateNow Version 1.0 (Next.js Web MVP)** and **Version 2.0 (Native iOS Migration)**.
 
 ---
 
-## 1. Project Phase Breakdown & Token Consumption
+## 1. Project Phase Breakdown & Optimized Token Consumption
 
-The development of the DonateNow project was completed across three primary phases:
+The development of the DonateNow project was completed across distinct phases for both versions, optimizing token usage by leveraging different AI models based on the required reasoning depth.
 
-### Phase 1: Architectural Modeling & Context Engineering
-* **Scope**: Formulating the PRD, KPI metrics, DB ERD, coding guidelines, development constraints, and tech stack personas.
-* **Model Used**: Gemini 1.5 Pro (highly recommended for complex design, structural cross-referencing, and planning).
+### Version 1.0: Next.js Web MVP
+
+#### Phase 1.1: Web Architectural Modeling & Context Engineering
+* **Scope**: Formulating the initial PRD, web KPIs, basic database ERD, Next.js routing structures, and web coding guidelines.
+* **Model Used**: Gemini 1.5 Pro (used for complex design and system mapping).
+* **Token Estimations**:
+  * **Input Tokens**: ~1,200,000 tokens (contextualizing the web app requirements).
+  * **Output Tokens**: ~60,000 tokens (generating initial spec files).
+
+#### Phase 1.2: Web Scaffolding & Implementation
+* **Scope**: Structuring Next.js pages, Tailwind CSS styling, writing React hooks, and basic API routes.
+* **Model Used**: Gemini 3.5 Flash / Gemini 1.5 Flash (optimized for rapid code generation).
+* **Token Estimations**:
+  * **Input Tokens**: ~1,800,000 tokens.
+  * **Output Tokens**: ~90,000 tokens.
+
+---
+
+### Version 2.0: Native iOS Migration
+
+#### Phase 2.1: iOS Context Engineering & Migration Strategy
+* **Scope**: Mapping web components to SwiftUI, planning the MVVM architecture, structuring the Xcode project, and designing secure Supabase Edge Functions.
+* **Model Used**: Gemini 1.5 Pro (essential for cross-platform structural translation).
 * **Token Estimations**:
   * **Input Tokens**: ~1,800,000 tokens (multiple iterations of context-rich analysis).
   * **Output Tokens**: ~80,000 tokens (generation of `.mdc` and `.md` specification files).
 
-### Phase 2: Codebase Migration & Scaffolding
-* **Scope**: Structuring the Xcode project, writing views (`DonationView`, `AdminDashboardView`), configuring Edge Functions, and building database migrations.
+#### Phase 2.2: iOS Codebase Scaffolding
+* **Scope**: Writing SwiftUI views (`DonationView`, `AdminDashboardView`), configuring Edge Functions (`create-order`, `verify-payment`), and building database migrations.
 * **Model Used**: Gemini 1.5 Pro / Gemini 3.5 Flash.
 * **Token Estimations**:
   * **Input Tokens**: ~2,500,000 tokens (re-sending active files, schemas, and README logs across chat turns).
   * **Output Tokens**: ~100,000 tokens (scaffolding code, template configs).
 
-### Phase 3: Bug Fixing, Testing & Polish (Current)
-* **Scope**: Fixing the `verify-payment` Edge Function permissions, correcting SwiftUI compile issues, writing tests (`Swift Testing` & `XCUITest`), and documenting documentation.
-* **Model Used**: Gemini 3.5 Flash.
+#### Phase 2.3: Bug Fixing, Testing & Polish
+* **Scope**: Fixing the Edge Function permissions, resolving SwiftUI compile issues, and writing tests (`Swift Testing` & `XCUITest`).
+* **Model Used**: Gemini 3.5 Flash (highly efficient for repetitive debugging).
 * **Token Estimations**:
   * **Input Tokens**: ~1,200,000 tokens.
   * **Output Tokens**: ~30,000 tokens.
@@ -48,41 +68,44 @@ The financial cost is calculated based on current Gemini API pricing tiers (assu
 
 ### Total Consolidated Costs (Estimated Average)
 
-Depending on which model mixture was utilized, we present two pricing scenarios (High-Tier Pro vs. Low-Tier Flash):
+Combining the metrics from **Version 1.0** and **Version 2.0**, we calculate the token footprint across both platforms:
+
+* **Total Input Tokens**: ~8,500,000 tokens
+* **Total Output Tokens**: ~360,000 tokens
 
 #### Scenario A: Gemini 1.5 Pro Dominant (High-Tier Reasoning)
-Recommended for initial project architecture mapping where maximum intelligence is required.
+Used when the majority of work relied heavily on complex cross-platform migrations and deep architectural context.
 
 | Metrics | Input Volume | Output Volume | Price (USD) | Price (INR) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Input Tokens** | 5,500,000 | — | $6.88 | ₹577.92 |
-| **Output Tokens** | — | 210,000 | $1.05 | ₹88.20 |
-| **Total** | **5,710,000** | — | **$7.93** | **₹666.12** |
+| **Input Tokens** | 8,500,000 | — | $10.63 | ₹892.92 |
+| **Output Tokens** | — | 360,000 | $1.80 | ₹151.20 |
+| **Total** | **8,500,000** | **360,000** | **$12.43** | **₹1,044.12** |
 
 #### Scenario B: Gemini 3.5 Flash Dominant (Low-Tier Efficiency)
-Ideal for standard code updates, simple refactoring, and test writing.
+Used when tasks were optimized using smaller context windows, focused prompts, and fast code iterations.
 
 | Metrics | Input Volume | Output Volume | Price (USD) | Price (INR) |
 | :--- | :--- | :--- | :--- | :--- |
-| **Input Tokens** | 5,500,000 | — | $0.41 | ₹34.44 |
-| **Output Tokens** | — | 210,000 | $0.06 | ₹5.04 |
-| **Total** | **5,710,000** | — | **$0.47** | **₹39.48** |
+| **Input Tokens** | 8,500,000 | — | $0.64 | ₹53.76 |
+| **Output Tokens** | — | 360,000 | $0.11 | ₹9.24 |
+| **Total** | **8,500,000** | **360,000** | **$0.75** | **₹63.00** |
 
 ---
 
-## 3. Advanced AI Capabilities & Tool Usage
+## 3. Advanced Context Optimization Protocols
 
-To build, verify, and document this codebase, the AI Agent utilized several specialized capabilities:
+To build, verify, and document this multi-version codebase efficiently, the AI Agent utilized several specialized optimization capabilities to lower token consumption:
 
-1. **System Command Execution (`run_command`)**:
-   * Evaluated compile status using Xcode CLI compilers (`xcodebuild`).
-   * Managed git version control, verified commit records, and tracked state.
-2. **FileSystem Access & Search (`list_dir`, `view_file`, `grep_search`)**:
-   * Handled code discovery and workspace mapping to resolve missing or duplicate directories.
-   * Inspected file structures recursively to ensure the Swift files matched the Xcode project configuration.
-3. **Structured File Editing (`write_to_file`, `replace_file_content`)**:
-   * Created boilerplate directories, database seed templates, and mock configs.
-   * Performed targeted, contiguous code replacements to resolve Swift compilation errors.
-4. **Context Optimization Protocols**:
-   * Enforced the **Save Token Protocol** (`Save_Token.mdc`), prioritizing diff formats (`+` / `-`) instead of printing whole files, which reduced output costs by over **70%**.
-   * Replaced verbose explanations with concise, developer-friendly Markdown tables.
+1. **Model Routing Strategy**:
+   * **Gemini 1.5 Pro** was reserved strictly for Phase 1 architectural mapping and cross-platform (Web -> iOS) translations.
+   * **Gemini 3.5 Flash** was actively employed for routine component scaffolding, UI generation, and unit testing, reducing costs dramatically.
+
+2. **Delta Updates (Diffing)**:
+   * Enforced the **Save Token Protocol** (`Save_Token.mdc`), prioritizing diff formats (`+` / `-`) instead of re-printing whole files. This reduced output costs by over **70%** during Phase 2.3 bug fixing.
+
+3. **Targeted File System Access**:
+   * Minimized input tokens by using targeted `grep_search` and `view_file` calls rather than dumping entire project trees into the context.
+
+4. **Structured File Editing (`replace_file_content`)**:
+   * Performed targeted, contiguous code replacements to resolve Swift compilation errors and Next.js API bugs without re-generating unchanged surrounding logic.

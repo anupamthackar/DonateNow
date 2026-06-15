@@ -96,7 +96,8 @@ struct IntegrationTests {
             donor_phone: "9876543210",
             amount: 500.0,
             campaign_id: nil,
-            is_anonymous: false
+            is_anonymous: false,
+            is_recurring: false
         )
         
         do {
